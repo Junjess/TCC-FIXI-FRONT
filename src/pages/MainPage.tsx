@@ -23,9 +23,10 @@ import {
 import { motion } from "framer-motion";
 import { Visibility, VisibilityOff, Person } from "@mui/icons-material";
 import AppBarCustom from "../components/AppBarCustom";
-import SwitchLightDarkMode from "../components/SwitchLightDarkMode";
+import TrocarTema from "../components/TrocarTema";
 import { useNavigate } from "react-router-dom";
-import { loginClienteService, loginPrestadorService } from "../services/autenticacaoServices";
+import { cadastroClienteService, cadastroPrestadorService, loginClienteService, loginPrestadorService } from "../services/autenticacaoServices";
+import { useUser } from "../contexts/UserContext";
 
 const serviceTypes = [
     "Eletricista",
@@ -53,13 +54,19 @@ type SnackbarType = {
 const MainPage: React.FC = () => {
     const theme = useTheme();
     const navigate = useNavigate();
+    const { setUser } = useUser();
 
     const [loginOpen, setLoginOpen] = useState(false);
     const [signupOpen, setSignupOpen] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     const [tipoUsuario, setTipoUsuario] = useState<"cliente" | "prestador">("cliente");
-    const [serviceType, setServiceType] = useState(serviceTypes[0]);
+    const [tipoServico, setTipoServico] = useState(serviceTypes[0]);
+    const [nome, setNome] = useState('');
+    const [telefone, setTelefone] = useState('');
+    const [cidade, setCidade] = useState('');
+    const [estado, setEstado] = useState('');
+    const [descricao, setDescricao] = useState('');
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [snackbar, setSnackbar] = useState<SnackbarType>({
@@ -90,10 +97,9 @@ const MainPage: React.FC = () => {
             });
             return;
         }
-        if (tipoUsuario == "cliente") {
+        if (tipoUsuario === "cliente") {
             try {
                 const resp = await loginClienteService({ email, senha, tipoUsuario });
-                console.log(resp);
 
                 if (resp.status === 200 || resp.status === 201) {
                     setSnackbar({
@@ -101,6 +107,7 @@ const MainPage: React.FC = () => {
                         message: "Conta logada com sucesso!",
                         severity: "success",
                     });
+                    setUser(resp.data);
                     navigate("/home/cliente");
                 } else {
                     setSnackbar({
@@ -127,6 +134,90 @@ const MainPage: React.FC = () => {
                         message: "Conta logada com sucesso!",
                         severity: "success",
                     });
+                    setUser(resp.data);
+                    navigate("/home/prestador");
+                } else {
+                    setSnackbar({
+                        open: true,
+                        message: resp.data?.message || "Erro ao logar usuario",
+                        severity: "error",
+                    });
+                }
+            } catch (error: any) {
+                setSnackbar({
+                    open: true,
+                    message: error.message || "Error logging in",
+                    severity: "error",
+                });
+            }
+        }
+
+    };
+
+    const cadastro = async () => {
+        const errors: string[] = [];
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!email) { errors.push("Email é obrigatório"); }
+        else if (!emailRegex.test(email)) { errors.push("Insira um email valido"); }
+        if (!senha) { errors.push("Senha é obrigatório"); }
+        if (!nome) { errors.push("Nome é obrigatório"); }
+        if (!telefone) { errors.push("Telefone é obrigatório"); }
+        if (!cidade) { errors.push("Cidade é obrigatório"); }
+        if (!estado) { errors.push("Estado é obrigatório"); }
+
+        if (tipoUsuario === "prestador") {
+            if (!tipoServico) { errors.push("Tipo de Serviço é obrigatório"); }
+            if (!descricao) { errors.push("Descrição é obrigatório"); }
+        }
+
+        if (errors.length > 0) {
+            setSnackbar({
+                open: true,
+                message: errors.join("\n"),
+                severity: "error",
+            });
+            return;
+        }
+        if (tipoUsuario === "cliente") {
+            try {
+                const resp = await cadastroClienteService({ nome, email, senha, telefone, cidade, estado, tipoUsuario });
+                console.log(resp);
+
+                if (resp.status === 200 || resp.status === 201) {
+                    setSnackbar({
+                        open: true,
+                        message: "Conta logada com sucesso!",
+                        severity: "success",
+                    });
+                    setUser(resp.data);
+                    navigate("/home/cliente");
+                } else {
+                    setSnackbar({
+                        open: true,
+                        message: resp.data?.message || "Erro ao logar usuario",
+                        severity: "error",
+                    });
+                }
+            } catch (error: any) {
+                setSnackbar({
+                    open: true,
+                    message: error.message || "Error logging in",
+                    severity: "error",
+                });
+            }
+        }
+        else {
+            try {
+                const resp = await cadastroPrestadorService({ nome, email, senha, telefone, cidade, estado, tipoUsuario, tipoServico, descricao });
+
+                if (resp.status === 200 || resp.status === 201) {
+                    setSnackbar({
+                        open: true,
+                        message: "Conta logada com sucesso!",
+                        severity: "success",
+                    });
+                    setUser(resp.data);
                     navigate("/home/prestador");
                 } else {
                     setSnackbar({
@@ -212,9 +303,10 @@ const MainPage: React.FC = () => {
                         </Typography>
                     </Box>
 
-                    <FormControl sx={{ mb: 3 }}>
+                    <FormControl sx={{ backgroundColor: theme.palette.background.paper, alignItems: "center", pt: 2 }}>
                         <FormLabel>Tipo de usuário</FormLabel>
                         <RadioGroup
+                            sx={{ backgroundColor: theme.palette.background.paper }}
                             row
                             value={tipoUsuario}
                             onChange={(e) => setTipoUsuario(e.target.value as "cliente" | "prestador")}
@@ -297,9 +389,10 @@ const MainPage: React.FC = () => {
 
                         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                             {/* Campos comuns */}
-                            <TextField label="Nome" sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }} />
-                            <TextField label="Email" type="email" sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }} />
+                            <TextField onChange={(e) => setNome(e.target.value)} label="Nome" sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }} />
+                            <TextField onChange={(e) => setEmail(e.target.value)} label="Email" type="email" sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }} />
                             <TextField
+                                onChange={(e) => setSenha(e.target.value)}
                                 label="Senha"
                                 type={showPassword ? "text" : "password"}
                                 sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }}
@@ -313,16 +406,16 @@ const MainPage: React.FC = () => {
                                     ),
                                 }}
                             />
-                            <TextField label="Telefone" sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }} />
-                            <TextField label="Cidade" sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }} />
-                            <TextField label="Estado" sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }} />
+                            <TextField onChange={(e) => setTelefone(e.target.value)} label="Telefone" sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }} />
+                            <TextField onChange={(e) => setCidade(e.target.value)} label="Cidade" sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }} />
+                            <TextField onChange={(e) => setEstado(e.target.value)} label="Estado" sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }} />
 
                             {/* Campos extras para prestador */}
                             {tipoUsuario === "prestador" && (
                                 <>
                                     <FormControl sx={{ flex: "1 1 100%" }}>
                                         <FormLabel>Tipo de serviço</FormLabel>
-                                        <Select value={serviceType} onChange={(e) => setServiceType(e.target.value)} sx={{ flex: "1 1 100%", backgroundColor: theme.palette.background.default }}>
+                                        <Select value={tipoServico} onChange={(e) => setTipoServico(e.target.value)} sx={{ flex: "1 1 100%", backgroundColor: theme.palette.background.default }}>
 
                                             {serviceTypes.map((type) => (
                                                 <MenuItem key={type} value={type}>
@@ -331,7 +424,7 @@ const MainPage: React.FC = () => {
                                             ))}
                                         </Select>
                                     </FormControl>
-                                    <TextField label="Descrição do serviço" multiline rows={3} sx={{ flex: "1 1 100%", backgroundColor: theme.palette.background.default }} />
+                                    <TextField onChange={(e) => setDescricao(e.target.value)} label="Descrição do serviço" multiline rows={3} sx={{ flex: "1 1 100%", backgroundColor: theme.palette.background.default }} />
                                 </>
                             )}
                         </Box>
@@ -339,6 +432,7 @@ const MainPage: React.FC = () => {
                         <Box sx={{ mt: 4, textAlign: "center" }}>
                             <Button
                                 variant="contained"
+                                onClick={cadastro}
                                 sx={{
                                     backgroundColor: "#395195",
                                     color: "#ffffff",
@@ -368,7 +462,7 @@ const MainPage: React.FC = () => {
                     </Alert>
                 </Snackbar>
 
-                <SwitchLightDarkMode />
+                <TrocarTema />
             </Box>
         </>
     );

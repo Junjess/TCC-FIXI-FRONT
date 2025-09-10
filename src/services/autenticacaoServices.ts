@@ -1,9 +1,31 @@
 import axios from "axios";
 
 type Login = {
-    email: string;
-    senha: string;
-    tipoUsuario: string;
+  email: string;
+  senha: string;
+  tipoUsuario: string;
+}
+
+type CadastroCliente = {
+  nome: string;
+  email: string;
+  senha: string;
+  telefone: string;
+  cidade: string;
+  estado: string;
+  tipoUsuario: string;
+}
+
+type CadastroPrestador = {
+  nome: string;
+  email: string;
+  senha: string;
+  telefone: string;
+  cidade: string;
+  estado: string;
+  tipoUsuario: string;
+  tipoServico: string;
+  descricao: string;
 }
 
 export const loginClienteService = async (data: Login) => {
@@ -22,6 +44,26 @@ export const loginPrestadorService = async (data: Login) => {
     return response;
   } catch (error: any) {
     console.error("Erro ao logar:", error);
-    throw new Error(error.response?.data ||  "Erro ao logar");
+    throw new Error(error.response?.data || "Erro ao logar");
   }
 };
+
+export const cadastroClienteService = async (data: CadastroCliente) => {
+  try {
+    const response = await axios.post("http://localhost:8080/auth/cadastro/cliente", data)
+    return response;
+  } catch (error: any) {
+    console.error("Erro ao cadastrar:", error);
+    throw new Error(error.response?.data || "Erro ao cadastar cliente")
+  }
+}
+
+export const cadastroPrestadorService = async (data: CadastroPrestador) => {
+  try {
+    const response = await axios.post("http://localhost:8080/auth/cadastro/prestador", data)
+    return response;
+  } catch (error: any) {
+    console.error("Erro ao cadastrar:", error);
+    throw new Error(error.response?.data || "Erro ao cadastar prestador")
+  }
+}
