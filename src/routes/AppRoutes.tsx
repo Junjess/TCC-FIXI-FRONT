@@ -3,7 +3,7 @@ import { Route, Routes, Navigate } from 'react-router-dom'
 import MainPage from '../pages/MainPage'
 import HomeCliente from '../pages/HomeCliente'
 import HomePrestador from '../pages/HomePrestador'
-
+import PageProcurarServico from '../pages/PageProcurarServico'
 
 function AppRoutes() {
   return (
@@ -11,6 +11,7 @@ function AppRoutes() {
         <Route path="/main" element={<MainPage/>}/>
         <Route path="/home/cliente" element={<HomeCliente/>}/>
         <Route path="/home/prestador" element={<HomePrestador/>}/>
+        <Route path="/search" element={<PageProcurarServico/>}/>
         <Route path="*" element={<Navigate to="/main" replace />} />
     </Routes>
   )

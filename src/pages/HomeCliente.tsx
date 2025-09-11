@@ -14,13 +14,14 @@ import {
 } from "@mui/material";
 import { Search, SmartToy, AccountCircle, CalendarMonth, History } from "@mui/icons-material";
 import TrocarTema from "../components/TrocarTema";
-import axios from "axios";
 import { useUser } from "../contexts/UserContext";
 import AgendamentosClienteList, { AgendamentoRespostaDTO } from "../components/AgendamentosClienteList";
+import {useNavigate } from "react-router-dom";
 
 const HomeCliente: React.FC = () => {
   const theme = useTheme();
   const { user } = useUser();
+  const navigate = useNavigate();
 
   if (!user) {
     return (
@@ -47,6 +48,7 @@ const HomeCliente: React.FC = () => {
               color="inherit"
               startIcon={<Search />}
               sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
+              onClick={() => navigate("/search")}
             >
               Procurar Serviço
             </Button>
@@ -54,6 +56,7 @@ const HomeCliente: React.FC = () => {
               color="inherit"
               startIcon={<SmartToy />}
               sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
+
             >
               IA Recomendações
             </Button>
@@ -87,7 +90,6 @@ const HomeCliente: React.FC = () => {
             Meus Agendamentos
           </Typography>
 
-          {/* ✅ agora podemos usar user.id sem erro */}
           <AgendamentosClienteList clienteId={user.id} />
         </Card>
       </Container>
