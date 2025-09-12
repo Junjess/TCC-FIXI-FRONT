@@ -1,6 +1,8 @@
-import { Avatar, Box, Card, CardContent, Chip, Stack, Typography, Rating } from "@mui/material";
+import { Avatar, Box, Card, CardContent, Chip, Stack, Typography, Rating, Button } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 interface CardPrestadorProps {
+  id: number;
   nome: string;
   categoria: string;
   cidade: string;
@@ -12,6 +14,7 @@ interface CardPrestadorProps {
 }
 
 export default function CardPrestador({
+  id,
   nome,
   categoria,
   cidade,
@@ -22,10 +25,17 @@ export default function CardPrestador({
   descricao
 }: CardPrestadorProps) {
 
-  console.log("Média recebida:", mediaAvaliacao, typeof mediaAvaliacao);
-
+  const navigate= useNavigate();
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 3, overflow: "hidden", transition: "0.3s", "&:hover": { boxShadow: 6 } }}>
+    <Card
+      sx={{
+        borderRadius: 3,
+        boxShadow: 3,
+        overflow: "hidden",
+        transition: "0.3s",
+        "&:hover": { boxShadow: 6 },
+      }}
+    >
       <CardContent>
         <Stack direction="row" spacing={2} alignItems="center">
           <Avatar src={foto ?? undefined} alt={nome} sx={{ width: 64, height: 64, fontSize: 24 }}>
@@ -42,11 +52,19 @@ export default function CardPrestador({
             <Typography variant="body2" color="text.secondary">{telefone}</Typography>
             <Typography variant="body2" color="text.secondary">{descricao}</Typography>
 
-
             <Stack direction="row" alignItems="center" spacing={1} mt={1}>
               <Rating value={mediaAvaliacao} precision={0.5} readOnly size="small" />
               <Typography variant="body2" color="text.secondary">{mediaAvaliacao.toFixed(1)} / 5</Typography>
             </Stack>
+
+            {/* Botão para visualizar perfil */}
+            <Button
+              variant="outlined"
+              sx={{ mt: 2 }}
+              onClick={() => navigate(`/prestador/${id}`)}
+            >
+              Visualizar Perfil
+            </Button>
           </Box>
         </Stack>
       </CardContent>

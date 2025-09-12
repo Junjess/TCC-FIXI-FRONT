@@ -73,6 +73,7 @@ export default function BuscaPrestadores({ busca, categorias = [] }: Props) {
       {prestadores.map((p) => (
         <CardPrestador
           key={p.id}
+          id={p.id}
           nome={p.nome}
           categoria={p.categoria}
           cidade={p.cidade}

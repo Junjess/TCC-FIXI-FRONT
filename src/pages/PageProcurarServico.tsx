@@ -108,7 +108,6 @@ export default function PageProcurarServico() {
         </Toolbar>
       </AppBar>
 
-      {/* Chips dos filtros aplicados (opcional, mas útil) */}
       {categoriasSelecionadas.length > 0 && (
         <Stack direction="row" spacing={1} sx={{ p: 2, flexWrap: "wrap" }}>
           <InputLabel sx={{ alignSelf: "center" }}>Categorias:</InputLabel>
@@ -127,10 +126,8 @@ export default function PageProcurarServico() {
         </Stack>
       )}
 
-      {/* Lista com os prestadores filtrados */}
       <BuscaPrestadores busca={busca} categorias={categoriasSelecionadas} />
 
-      {/* Dialog de filtros */}
       <Dialog
         open={openFiltros}
         onClose={() => setOpenFiltros(false)}
