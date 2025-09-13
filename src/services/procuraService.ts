@@ -1,4 +1,3 @@
-// procuraService.ts
 
 import { api } from "./api";
 

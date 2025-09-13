@@ -5,6 +5,7 @@ import HomeCliente from '../pages/HomeCliente'
 import HomePrestador from '../pages/HomePrestador'
 import PageProcurarServico from '../pages/PageProcurarServico'
 import PerfilPrestador from '../pages/PerfilPrestador'
+import HistoricoCliente from '../pages/HistoricoCliente'
 
 function AppRoutes() {
   return (
@@ -13,6 +14,7 @@ function AppRoutes() {
       <Route path="/home/cliente" element={<HomeCliente />} />
       <Route path="/home/prestador" element={<HomePrestador />} />
       <Route path="/search" element={<PageProcurarServico />} />
+      <Route path="/historico/cliente" element={<HistoricoCliente />} />
       <Route path="/prestador/:id" element={<PerfilPrestador />} />
       <Route path="*" element={<Navigate to="/main" replace />} />
     </Routes>

@@ -3,6 +3,7 @@ import { api } from "./api";
 export type AvaliacaoDTO = {
   nota: number;
   clienteNome: string;
+  descricao: string;
 };
 
 export type PrestadorDetalhesDTO = {
@@ -18,7 +19,11 @@ export type PrestadorDetalhesDTO = {
   avaliacoes: AvaliacaoDTO[];
 };
 
-export async function buscarPrestadorPorId(id: number): Promise<PrestadorDetalhesDTO> {
-  const { data } = await api.get<PrestadorDetalhesDTO>(`/prestadores/perfil/${id}`);
+export async function buscarPrestadorPorId(
+  id: number
+): Promise<PrestadorDetalhesDTO> {
+  const { data } = await api.get<PrestadorDetalhesDTO>(
+    `/prestadores/perfil/${id}`
+  );
   return data;
 }

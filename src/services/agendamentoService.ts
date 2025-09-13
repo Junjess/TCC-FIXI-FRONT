@@ -7,6 +7,7 @@ export async function listarAgendamentosPorCliente(clienteId: number) {
   const { data } = await api.get<AgendamentoRespostaDTO[]>(
     `/cliente/${clienteId}/agendamentos`
   );
+  console.log(data);
   return data;
 }
 

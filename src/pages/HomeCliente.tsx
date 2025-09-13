@@ -63,7 +63,7 @@ const HomeCliente: React.FC = () => {
             {/*Colocar ao clicar no icone de perfil */}
             <Button
               color="inherit"
-              startIcon={<History />}
+              startIcon={<History />} onClick={() => navigate("/historico/cliente")}
               sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
             >
               Histórico

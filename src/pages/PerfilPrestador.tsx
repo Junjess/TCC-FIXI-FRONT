@@ -12,7 +12,6 @@ import {
   IconButton,
   Button,
   Card,
-  CardContent,
   Divider,
   useTheme,
   Dialog,
@@ -114,8 +113,8 @@ export default function PerfilPrestador() {
           (a) =>
             a.data === data &&
             a.statusAgendamento !== "RECUSADO" &&
-            (a as AgendaPrestadorDTO).idAgendamento && 
-            user.id 
+            (a as AgendaPrestadorDTO).idAgendamento &&
+            user.id
         );
 
         return { data, ocupados, bloqueadoCliente: clienteTemAgendamento };
@@ -239,10 +238,50 @@ export default function PerfilPrestador() {
 
           <Divider sx={{ my: 3 }} />
 
+          {/* SOBRE */}
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             Sobre
           </Typography>
-          <Typography>{prestador.descricao}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {prestador.descricao}
+          </Typography>
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* AVALIAÇÕES */}
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Avaliações
+          </Typography>
+
+          {prestador.avaliacoes && prestador.avaliacoes.length > 0 ? (
+            <Stack spacing={2}>
+              {prestador.avaliacoes.map((avaliacao, idx) => (
+                <Card key={idx} sx={{ borderRadius: 2, boxShadow: 2, p: 2 }}>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Avatar>{avaliacao.clienteNome[0]}</Avatar>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        {avaliacao.clienteNome}
+                      </Typography>
+                      <Rating
+                        value={avaliacao.nota}
+                        precision={0.5}
+                        readOnly
+                        size="small"
+                      />
+                    </Box>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary" mt={1}>
+                    {avaliacao.descricao}
+                  </Typography>
+                </Card>
+              ))}
+            </Stack>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Nenhuma avaliação ainda.
+            </Typography>
+          )}
         </Card>
       </Box>
 
@@ -271,8 +310,8 @@ export default function PerfilPrestador() {
                     const motivo = ocupado
                       ? "Já existe um agendamento ACEITO nesse período"
                       : dia.bloqueadoCliente
-                      ? "Você já possui um agendamento nesse dia"
-                      : undefined;
+                        ? "Você já possui um agendamento nesse dia"
+                        : undefined;
 
                     const disabled = ocupado || dia.bloqueadoCliente;
 
@@ -315,7 +354,6 @@ export default function PerfilPrestador() {
           {snackbarMsg}
         </Alert>
       </Snackbar>
-
       <TrocarTema />
     </Box>
   );
