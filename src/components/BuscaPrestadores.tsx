@@ -7,7 +7,9 @@ import TrocarTema from "./TrocarTema";
 
 type Props = {
   busca: string;
-  categorias?: number[]; 
+  categorias?: number[];
+  cidade?: string;
+  estado?: string;
 };
 
 function useDebounce<T>(value: T, delay = 400) {
@@ -39,6 +41,8 @@ export default function BuscaPrestadores({ busca, categorias = [] }: Props) {
           idCliente: user.id,
           busca: debouncedBusca,
           categorias,
+          cidade: user.cidade,   // 🔹 pega do usuário logado
+          estado: user.estado,   // 🔹 pega do usuário logado
         });
         setPrestadores(data);
       } catch (error) {
@@ -50,7 +54,7 @@ export default function BuscaPrestadores({ busca, categorias = [] }: Props) {
     };
 
     fetchPrestadores();
-  }, [user?.id, debouncedBusca, categoriasKey]);
+  }, [user?.id, user?.cidade, user?.estado, debouncedBusca, categoriasKey]);
 
   if (loading) {
     return (
@@ -80,11 +84,11 @@ export default function BuscaPrestadores({ busca, categorias = [] }: Props) {
           estado={p.estado}
           telefone={p.telefone}
           foto={p.foto}
-          mediaAvaliacao={p.mediaAvaliacao} 
+          mediaAvaliacao={p.mediaAvaliacao}
           descricao={p.descricao}
         />
       ))}
-      <TrocarTema/>
+      <TrocarTema />
     </Stack>
   );
 }

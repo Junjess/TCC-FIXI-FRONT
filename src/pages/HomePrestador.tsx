@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import { useUser } from "../contexts/UserContext";
-import { AccountCircle, CalendarMonth, BuildCircle, Star } from "@mui/icons-material";
+import { AccountCircle, CalendarMonth, BuildCircle, Star, Home } from "@mui/icons-material";
 import TrocarTema from "../components/TrocarTema";
 
 type Agendamento = {
@@ -65,6 +65,14 @@ const HomePrestador: React.FC = () => {
                     <Box sx={{ ml: "auto" }}>
                         <Button
                             color="inherit"
+                            startIcon={<Home />}
+                            sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
+                            //onClick={() => navigate("/home/cliente")}
+                        >
+                            Início
+                        </Button>
+                        <Button
+                            color="inherit"
                             startIcon={<BuildCircle />}
                             sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
                         >
@@ -88,7 +96,7 @@ const HomePrestador: React.FC = () => {
             </AppBar>
 
             {/* CONTEÚDO */}
-            <Container sx={{ mt: 5}}>
+            <Container sx={{ mt: 5 }}>
                 {user && (
                     <Typography
                         variant="h5"

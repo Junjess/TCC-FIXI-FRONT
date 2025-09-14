@@ -22,7 +22,7 @@ import {
   Alert,
   Tooltip,
 } from "@mui/material";
-import { Search, SmartToy, AccountCircle, History } from "@mui/icons-material";
+import { Search, SmartToy, AccountCircle, History, Home } from "@mui/icons-material";
 import {
   buscarPrestadorPorId,
   PrestadorDetalhesDTO,
@@ -160,6 +160,14 @@ export default function PerfilPrestador() {
           />
 
           <Box sx={{ ml: "auto" }}>
+            <Button
+              color="inherit"
+              startIcon={<Home />}
+              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
+              onClick={() => navigate("/home/cliente")}
+            >
+              Início
+            </Button>
             <Button
               color="inherit"
               startIcon={<Search />}

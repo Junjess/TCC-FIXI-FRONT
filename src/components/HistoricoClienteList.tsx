@@ -51,7 +51,6 @@ export default function HistoricoClienteList({ clienteId }: Props) {
         };
     }, [clienteId]);
 
-
     if (loading) {
         return (
             <Stack alignItems="center" justifyContent="center" sx={{ p: 4 }}>
@@ -100,7 +99,12 @@ export default function HistoricoClienteList({ clienteId }: Props) {
                             </Avatar>
 
                             <Box flex={1}>
-                                <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+                                <Stack
+                                    direction="row"
+                                    alignItems="center"
+                                    spacing={1}
+                                    flexWrap="wrap"
+                                >
                                     <Typography variant="h6" fontWeight="bold">
                                         {ag.nomePrestador}
                                     </Typography>
@@ -125,6 +129,14 @@ export default function HistoricoClienteList({ clienteId }: Props) {
                                 <Typography variant="body2" fontWeight="bold" mt={1}>
                                     {dayjs(ag.data).format("DD/MM/YYYY")} - {ag.periodo}
                                 </Typography>
+
+                                {/* 🔹 Exibe avaliação */}
+                                <Box mt={2}>
+                                    <Rating value={ag.nota ?? 0} readOnly />
+                                    <Typography variant="body2" color="text.secondary">
+                                        {ag.descricaoAvaliacao ?? "Sem comentário"}
+                                    </Typography>
+                                </Box>
                             </Box>
                         </Stack>
                     </CardContent>

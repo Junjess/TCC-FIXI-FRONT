@@ -38,6 +38,8 @@ export type AgendamentoRespostaDTO = {
     periodo: string;
     statusAgendamento: string; // "ACEITO" | "PENDENTE"
     avaliado: boolean;
+    nota?: number;
+    descricaoAvaliacao?: string;
 };
 
 export default function AgendamentosClienteList({ clienteId }: Props) {

@@ -60,6 +60,7 @@ export default function CardPrestador({
             {/* Botão para visualizar perfil */}
             <Button
               variant="outlined"
+              color="inherit"
               sx={{ mt: 2 }}
               onClick={() => navigate(`/prestador/${id}`)}
             >

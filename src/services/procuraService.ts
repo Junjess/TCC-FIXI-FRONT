@@ -1,4 +1,3 @@
-
 import { api } from "./api";
 
 export type PrestadorDTO = {
@@ -17,16 +16,24 @@ type ListarPrestadoresParams = {
   idCliente: number;
   busca?: string;
   categorias?: number[];
+  cidade?: string;
+  estado?: string;
 };
 
 export async function listarPrestadores({
   idCliente,
   busca,
   categorias,
+  cidade,
+  estado,
 }: ListarPrestadoresParams): Promise<PrestadorDTO[]> {
   const params: any = {};
+
   if (busca && busca.trim()) params.q = busca.trim();
-  if (categorias && categorias.length > 0) params.categorias = categorias.join(",");
+  if (categorias && categorias.length > 0)
+    params.categorias = categorias.join(",");
+  if (cidade) params.cidade = cidade;
+  if (estado) params.estado = estado;
 
   const { data } = await api.get(`/prestadores/${idCliente}`, { params });
   console.log("RAW /prestadores:", data);
