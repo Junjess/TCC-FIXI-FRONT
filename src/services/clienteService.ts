@@ -52,3 +52,23 @@ export async function buscarFotoCliente(id: number): Promise<string | null> {
     return null;
   }
 }
+
+export async function cadastroClienteService(cliente: {
+  nome: string;
+  email: string;
+  senha: string;
+  telefone: string;
+}) {
+  const payload = {
+    ...cliente,
+    telefone: limparTelefone(cliente.telefone), // garante só números
+  };
+
+  const { data } = await api.post("/clientes", payload);
+  return data;
+}
+
+export function limparTelefone(telefone: string): string {
+  if (!telefone) return "";
+  return telefone.replace(/\D/g, ""); // remove tudo que não é número
+}

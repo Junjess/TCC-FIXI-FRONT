@@ -1,26 +1,68 @@
-import { AgendamentoRespostaDTO } from "../components/AgendamentosClienteList";
 import { api } from "./api";
 
-export type Periodo = "MATUTINO" | "VESPERTINO";
+// 🔹 Esse tipo deve refletir o que o backend manda no DTO
+export type AgendamentoRespostaDTO = {
+  idAgendamento: number;
+  idPrestador: number;
+  nomePrestador: string;
+  telefonePrestador: string;
+  fotoPrestador: string | null;
+  cidadePrestador: string | null;
+  estadoPrestador: string | null;
+  categorias: { nomeCategoria: string; descricao: string | null }[];
 
-export async function listarAgendamentosPorCliente(clienteId: number) {
-  const { data } = await api.get<AgendamentoRespostaDTO[]>(
-    `/clientes/${clienteId}/agendamentos`
-  );
-  console.log(data);
-  return data;
-}
+  // 🔹 Campos do CLIENTE (para a tela HomePrestador)
+  idCliente: number;
+  nomeCliente: string;
+  telefoneCliente: string | null;
+  fotoCliente: string | null;
+  cidadeCliente: string | null;
+  estadoCliente: string | null;
 
-export async function cancelarAgendamento(idAgendamento: number, clienteId: number) {
-  await api.delete(`/clientes/${clienteId}/agendamentos/${idAgendamento}/cancelar`);
-}
+  data: string; // "YYYY-MM-DD"
+  periodo: string;
+  statusAgendamento: "ACEITO" | "PENDENTE" | "RECUSADO" | "CANCELADO";
+  avaliado: boolean;
+  nota?: number;
+  descricaoAvaliacao?: string;
+  canceladoPor?: "CLIENTE" | "PRESTADOR" | null;
+};
 
+
+// 🔹 DTO usado no agendamento do prestador (para marcar horários)
 export type AgendaPrestadorDTO = {
   idAgendamento: number;
   data: string; // "YYYY-MM-DD"
-  periodo: Periodo;
-  statusAgendamento: "PENDENTE" | "ACEITO" | "RECUSADO";
+  periodo: "MATUTINO" | "VESPERTINO";
+  statusAgendamento: "PENDENTE" | "ACEITO" | "RECUSADO" | "CANCELADO";
 };
+
+// 🔹 Enum para período
+export type Periodo = "MATUTINO" | "VESPERTINO";
+
+// 🔹 Solicitar agendamento
+export async function solicitarAgendamento(
+  clienteId: number,
+  prestadorId: number,
+  data: string,
+  periodo: Periodo
+) {
+  const { data: response } = await api.post<AgendamentoRespostaDTO>(
+    `/prestadores/${prestadorId}/agendamentos`,
+    null,
+    { params: { clienteId, data, periodo } }
+  );
+  return response;
+}
+
+export async function listarAgendamentosPorCliente(
+  clienteId: number
+): Promise<AgendamentoRespostaDTO[]> {
+  const { data } = await api.get<AgendamentoRespostaDTO[]>(
+    `/clientes/${clienteId}/agendamentos`
+  );
+  return data;
+}
 
 export async function listarAgendaPrestador(
   prestadorId: number,
@@ -34,16 +76,29 @@ export async function listarAgendaPrestador(
   return data;
 }
 
-export async function solicitarAgendamento(
-  prestadorId: number,
-  clienteId: number,
-  dataISO: string,
-  periodo: Periodo
-): Promise<AgendaPrestadorDTO> {
-  const { data } = await api.post<AgendaPrestadorDTO>(
-    `/prestadores/${prestadorId}/agendamentos`,
-    null,
-    { params: { clienteId, data: dataISO, periodo } }
+export async function listarAgendamentosAceitosPorPrestador(
+  prestadorId: number
+): Promise<AgendamentoRespostaDTO[]> {
+  const { data } = await api.get<AgendamentoRespostaDTO[]>(
+    `/prestadores/${prestadorId}/agendamentos/aceitos`
   );
   return data;
+}
+
+export async function cancelarAgendamentoCliente(
+  idAgendamento: number,
+  clienteId: number
+) {
+  await api.put(
+    `/clientes/${clienteId}/agendamentos/${idAgendamento}/cancelar`
+  );
+}
+
+export async function cancelarAgendamentoPrestador(
+  idAgendamento: number,
+  prestadorId: number
+) {
+  await api.put(
+    `/prestadores/${prestadorId}/agendamentos/${idAgendamento}/cancelar`
+  );
 }

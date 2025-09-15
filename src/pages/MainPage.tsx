@@ -34,20 +34,25 @@ import {
 import { useUser } from "../contexts/UserContext";
 
 const serviceTypes = [
-  "Eletricista",
-  "Encanador",
-  "Pedreiro",
-  "Jardineiro",
-  "Cozinheiro Privado",
-  "Babá",
-  "Motorista",
-  "Dog Walker",
-  "Faxineiro",
-  "Professor Particular",
-  "Manicure/Pedicure",
-  "Assistente Virtual",
-  "Fotógrafo",
-  "Consultor de TI",
+  { id: 1, nome: "Eletricista" },
+  { id: 2, nome: "Encanador" },
+  { id: 3, nome: "Pedreiro" },
+  { id: 4, nome: "Jardineiro" },
+  { id: 5, nome: "Cozinheiro Privado" },
+  { id: 6, nome: "Babá" },
+  { id: 7, nome: "Motorista" },
+  { id: 8, nome: "Dog Walker" },
+  { id: 9, nome: "Faxineiro" },
+  { id: 10, nome: "Professor Particular" },
+  { id: 11, nome: "Manicure/Pedicure" },
+  { id: 12, nome: "Assistente Virtual" },
+  { id: 13, nome: "Fotógrafo" },
+  { id: 14, nome: "Consultor de TI" },
+];
+
+
+const categoriasIds = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
 ];
 
 type SnackbarType = {
@@ -68,7 +73,7 @@ const MainPage: React.FC = () => {
   const [tipoUsuario, setTipoUsuario] = useState<"cliente" | "prestador">(
     "cliente"
   );
-  const [tipoServico, setTipoServico] = useState(serviceTypes[0]);
+  const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<number[]>([]);
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [cep, setCep] = useState("");
@@ -108,8 +113,8 @@ const MainPage: React.FC = () => {
     try {
       const resp =
         tipoUsuario === "cliente"
-          ? await loginClienteService({ email, senha, tipoUsuario })
-          : await loginPrestadorService({ email, senha, tipoUsuario });
+          ? await loginClienteService({ email, senha, tipoUsuario: "CLIENTE" })
+          : await loginPrestadorService({ email, senha, tipoUsuario: "PRESTADOR" });
 
       if (resp.status === 200 || resp.status === 201) {
         setSnackbar({
@@ -188,8 +193,7 @@ const MainPage: React.FC = () => {
     else if (!cidade || !estado) errors.push("CEP inválido ou não localizado");
 
     if (tipoUsuario === "prestador") {
-      if (!tipoServico) errors.push("Tipo de Serviço é obrigatório");
-      if (!descricao) errors.push("Descrição é obrigatória");
+      if (!categoriasSelecionadas) errors.push("Tipo de Serviço é obrigatório");
     }
 
     if (errors.length > 0) {
@@ -205,47 +209,52 @@ const MainPage: React.FC = () => {
       const resp =
         tipoUsuario === "cliente"
           ? await cadastroClienteService({
-              nome,
-              email,
-              senha,
-              telefone,
-              cep,
-              tipoUsuario,
-            })
+            nome,
+            email,
+            senha,
+            telefone,
+            cep,
+            tipoUsuario: "CLIENTE",
+          })
           : await cadastroPrestadorService({
-              nome,
-              email,
-              senha,
-              telefone,
-              cep,
-              tipoUsuario,
-              tipoServico,
-              descricao,
-            });
+            nome,
+            email,
+            senha,
+            telefone,
+            cep,
+            tipoUsuario: "PRESTADOR",
+            descricao,
+            categoriasIds: categoriasSelecionadas,
+          });
 
-      if (resp.status === 200 || resp.status === 201) {
-        setSnackbar({
-          open: true,
-          message: "Conta criada com sucesso!",
-          severity: "success",
-        });
-        setUser(resp.data);
-        navigate(tipoUsuario === "cliente" ? "/home/cliente" : "/home/prestador");
-      } else {
-        setSnackbar({
-          open: true,
-          message: resp.data?.message || "Erro ao cadastrar usuário",
-          severity: "error",
-        });
-      }
+      setSnackbar({
+        open: true,
+        message: "Conta criada com sucesso!",
+        severity: "success",
+      });
+      setUser(resp);
+      navigate(tipoUsuario === "cliente" ? "/home/cliente" : "/home/prestador");
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error.message || "Erro ao cadastrar",
+        message: error.response?.data?.message || "Erro ao cadastrar usuário",
         severity: "error",
       });
     }
   };
+
+  function formatTelefone(value: string) {
+    value = value.replace(/\D/g, ""); // remove tudo que não for número
+    if (value.length > 11) value = value.slice(0, 11);
+
+    if (value.length > 6) {
+      return `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+    } else if (value.length > 2) {
+      return `(${value.slice(0, 2)}) ${value.slice(2)}`;
+    } else {
+      return value;
+    }
+  }
 
   return (
     <>
@@ -498,8 +507,10 @@ const MainPage: React.FC = () => {
                 }}
               />
               <TextField
-                onChange={(e) => setTelefone(e.target.value)}
                 label="Telefone"
+                value={telefone}
+                onChange={(e) => setTelefone(formatTelefone(e.target.value))}
+                required
                 sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }}
               />
 
@@ -529,26 +540,26 @@ const MainPage: React.FC = () => {
               {tipoUsuario === "prestador" && (
                 <>
                   <FormControl sx={{ flex: "1 1 100%" }}>
-                    <FormLabel>Tipo de serviço</FormLabel>
+                    <FormLabel>Categorias de serviço</FormLabel>
                     <Select
-                      value={tipoServico}
-                      onChange={(e) => setTipoServico(e.target.value)}
+                      multiple
+                      value={categoriasSelecionadas}
+                      onChange={(e) => setCategoriasSelecionadas(e.target.value as number[])}
+                      renderValue={(selected) =>
+                        serviceTypes
+                          .filter((type) => selected.includes(type.id))
+                          .map((type) => type.nome)
+                          .join(", ")
+                      }
                       sx={{ flex: "1 1 100%", backgroundColor: theme.palette.background.default }}
                     >
                       {serviceTypes.map((type) => (
-                        <MenuItem key={type} value={type}>
-                          {type}
+                        <MenuItem key={type.id} value={type.id}>
+                          {type.nome}
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
-                  <TextField
-                    onChange={(e) => setDescricao(e.target.value)}
-                    label="Descrição do serviço"
-                    multiline
-                    rows={3}
-                    sx={{ flex: "1 1 100%", backgroundColor: theme.palette.background.default }}
-                  />
                 </>
               )}
             </Box>

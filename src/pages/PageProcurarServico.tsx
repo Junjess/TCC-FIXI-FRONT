@@ -47,11 +47,9 @@ export default function PageProcurarServico() {
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 🔹 estados para cidade/estado obtidos pelo CEP
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
 
-  // 🔹 busca cidade/estado a partir do CEP do usuário
   useEffect(() => {
     if (user?.cep) {
       const cepLimpo = user.cep.replace(/\D/g, "");

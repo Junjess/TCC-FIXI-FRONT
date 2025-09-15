@@ -21,6 +21,7 @@ import {
   Snackbar,
   Alert,
   Tooltip,
+  Chip,
 } from "@mui/material";
 import { Search, SmartToy, AccountCircle, History, Home } from "@mui/icons-material";
 import {
@@ -73,7 +74,7 @@ export default function PerfilPrestador() {
   const handleAgendar = async (data: string, periodo: Periodo) => {
     if (!id || !user) return;
     try {
-      await solicitarAgendamento(Number(id), user.id, data, periodo);
+      await solicitarAgendamento(user.id, Number(id), data, periodo);
       setSnackbarMsg("✅ Agendamento solicitado com sucesso!");
       setSnackbarError(false);
       setDialogOpen(false);
@@ -221,9 +222,16 @@ export default function PerfilPrestador() {
               <Typography variant="h4" fontWeight="bold">
                 {prestador.nome}
               </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {prestador.categoria}
-              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" mt={1}>
+                {prestador.categorias?.map((c, idx) => (
+                  <Chip
+                    key={idx}
+                    label={`${c.nomeCategoria}${c.descricao ? ` - ${c.descricao}` : ""}`}
+                    color="primary"
+                    size="small"
+                  />
+                ))}
+              </Stack>
               <Typography variant="body2" color="text.secondary">
                 {prestador.cidade}, {prestador.estado}
               </Typography>

@@ -1,5 +1,10 @@
 import { api } from "./api";
 
+export type CategoriaDescricaoDTO = {
+  nomeCategoria: string;
+  descricao: string | null;
+};
+
 export type PrestadorDTO = {
   id: number;
   nome: string;
@@ -8,7 +13,7 @@ export type PrestadorDTO = {
   cidade: string;
   estado: string;
   descricao: string;
-  categoria: string;
+  categorias: CategoriaDescricaoDTO[]; // ✅ agora é lista
   mediaAvaliacao: number;
 };
 
@@ -46,7 +51,12 @@ export async function listarPrestadores({
     cidade: p.cidade,
     estado: p.estado,
     descricao: p.descricao,
-    categoria: p.categoria,
+    categorias: Array.isArray(p.categorias)
+      ? p.categorias.map((c: any) => ({
+          nomeCategoria: c.nomeCategoria,
+          descricao: c.descricao ?? null,
+        }))
+      : [], // garante array mesmo se vier vazio
     mediaAvaliacao: typeof p.mediaAvaliacao === "number" ? p.mediaAvaliacao : 0,
   }));
 }
