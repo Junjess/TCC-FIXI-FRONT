@@ -8,15 +8,14 @@ import {
   Chip,
   CircularProgress,
   useTheme,
-  AppBar,
-  Toolbar,
-  IconButton,
   Container,
   Typography,
   Stack,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { useUser } from "../contexts/UserContext";
-import { AccountCircle, CalendarMonth, BuildCircle, Star, Home } from "@mui/icons-material";
+import {CalendarMonth} from "@mui/icons-material";
 import TrocarTema from "../components/TrocarTema";
 import {
   listarAgendamentosAceitosPorPrestador,
@@ -24,12 +23,48 @@ import {
   cancelarAgendamentoPrestador,
 } from "../services/agendamentoService";
 import dayjs from "dayjs";
+import { CategoriaDescricaoDTO } from "../services/procuraService";
+import { atualizarFotoPrestador, atualizarPrestador } from "../services/prestadorService";
+import HeaderPrestador from "../components/prestador/HeaderPrestador";
+import DialogEditarPrestador from "../components/prestador/DialogEditarPrestador";
+
+
+export type PrestadorProfileDTO = {
+  id: number;
+  nome: string;
+  telefone: string;
+  senha: string;
+  foto: string;
+  email: string;
+  cep: string;
+  cidade: string;
+  estado: string;
+  categorias: CategoriaDescricaoDTO[];
+  mediaAvaliacao: number;
+};
+
+type SnackbarType = {
+  open: boolean;
+  message: string;
+  severity: "error" | "success" | "warning" | "info";
+};
 
 const HomePrestador: React.FC = () => {
-  const { user } = useUser();
-  const [agendamentos, setAgendamentos] = useState<AgendamentoRespostaDTO[]>([]);
+  const { user, setUser } = useUser();
   const theme = useTheme();
-  const [loading, setLoading] = useState(true);
+
+  const [agendamentos, setAgendamentos] = useState<AgendamentoRespostaDTO[]>([]);
+
+  const [openDialog, setOpenDialog] = useState(false);
+  const [formData, setFormData] = useState<Partial<PrestadorProfileDTO>>({});
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  
+  const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState<SnackbarType>({
+    open: false,
+    message: "",
+    severity: "error",
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -51,6 +86,30 @@ const HomePrestador: React.FC = () => {
 
     fetchAgendamentos();
   }, [user]);
+
+  if (!user) {
+    return (
+      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  const handleOpenDialog = () => {
+    setFormData({
+      nome: user.nome,
+      email: user.email,
+      telefone: user.telefone,
+      cidade: user.cidade,
+      estado: user.estado,
+    });
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setFotoFile(null);
+  };
 
   function formatarTelefone(telefone: string | null): string {
     if (!telefone) return "-";
@@ -74,35 +133,15 @@ const HomePrestador: React.FC = () => {
     }
   };
 
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: theme.palette.background.paper }}>
+
       {/* HEADER */}
-      <AppBar position="static" sx={{ backgroundColor: "#395195" }}>
-        <Toolbar>
-          <Box
-            component="img"
-            src={require("../assets/LogoFixiDark.png")}
-            alt="Logo Fixi"
-            sx={{ width: 80, height: 40, cursor: "pointer" }}
-          />
-
-          <Box sx={{ ml: "auto" }}>
-            <Button color="inherit" startIcon={<Home />} sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}>
-              Início
-            </Button>
-            <Button color="inherit" startIcon={<BuildCircle />} sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}>
-              Solicitação de Agendamento
-            </Button>
-            <Button color="inherit" startIcon={<Star />} sx={{ textTransform: "none", fontWeight: "bold", mr: 3 }}>
-              Minhas Avaliações
-            </Button>
-          </Box>
-
-          <IconButton color="inherit">
-            <AccountCircle fontSize="large" />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+      <HeaderPrestador onEditarPerfil={handleOpenDialog} />
 
       {/* CONTEÚDO */}
       <Container sx={{ mt: 5 }}>
@@ -176,32 +215,32 @@ const HomePrestador: React.FC = () => {
                           </Typography>
                         </Box>
 
-                        <Box minWidth={200} textAlign="right">
+                        <Stack direction="column" textAlign="right">
                           <Chip
                             label={ag.statusAgendamento}
                             color={
                               ag.statusAgendamento === "ACEITO"
                                 ? "success"
                                 : ag.statusAgendamento === "PENDENTE"
-                                ? "warning"
-                                : "error"
+                                  ? "warning"
+                                  : "error"
                             }
                             size="small"
-                            sx={{ mt: 1 }}
+                            sx={{ mt: 1, borderRadius: "4px" }}
                           />
 
                           {ag.statusAgendamento === "ACEITO" && (
                             <Button
                               variant="text"
                               color="error"
-                              size="small"
-                              sx={{ mt: 1 }}
+                              size="medium"
+                              sx={{ mt: 1, bgcolor: theme.palette.background.default }}
                               onClick={() => handleCancelar(ag.idAgendamento)}
                             >
                               Cancelar
                             </Button>
                           )}
-                        </Box>
+                        </Stack>
                       </Stack>
                     </CardContent>
                   </Card>
@@ -211,6 +250,51 @@ const HomePrestador: React.FC = () => {
           )}
         </Card>
       </Container>
+
+      <DialogEditarPrestador
+        open={openDialog}
+        onClose={handleCloseDialog}
+        user={user as PrestadorProfileDTO}
+        loading={loading}
+        onSave={async (formData, fotoFile) => {
+          try {
+            setLoading(true);
+
+            if (Object.keys(formData).length > 0) {
+              const updated = await atualizarPrestador(user.id, formData);
+              setUser(updated);
+            }
+
+            if (fotoFile) {
+              const updated = await atualizarFotoPrestador(user.id, fotoFile);
+              setUser(updated);
+            }
+
+            handleCloseDialog();
+          } catch (err) {
+            console.error("Erro ao atualizar prestador", err);
+            alert("Erro ao atualizar prestador");
+          } finally {
+            setLoading(false);
+          }
+        }}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%", whiteSpace: "pre-line" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
 
       <TrocarTema />
     </Box>

@@ -1,3 +1,4 @@
+import { PrestadorProfileDTO } from "../pages/HomePrestador";
 import { api } from "./api";
 
 export type AvaliacaoDTO = {
@@ -48,5 +49,27 @@ export async function cadastroPrestadorService(prestador: {
   };
 
   const { data } = await api.post("/prestadores", payload);
+  return data;
+}
+
+export async function atualizarPrestador(
+  id: number,
+  cliente: Partial<Omit<PrestadorProfileDTO, "id">>
+): Promise<PrestadorProfileDTO> {
+  const { data } = await api.put<PrestadorProfileDTO>(`/prestadores/atualizar/${id}`, cliente);
+  return data;
+}
+
+export async function atualizarFotoPrestador(
+  id: number,
+  file: File
+): Promise<PrestadorProfileDTO> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data } = await api.post<PrestadorProfileDTO>(`/prestadores/${id}/foto`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
   return data;
 }

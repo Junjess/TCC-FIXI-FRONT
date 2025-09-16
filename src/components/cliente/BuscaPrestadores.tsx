@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Stack, CircularProgress, Typography } from "@mui/material";
 import CardPrestador from "./CardPrestador";
-import { listarPrestadores, PrestadorDTO } from "../services/procuraService";
-import { useUser } from "../contexts/UserContext";
-import TrocarTema from "./TrocarTema";
+import { listarPrestadores, PrestadorDTO } from "../../services/procuraService";
+import { useUser } from "../../contexts/UserContext";
+import TrocarTema from "../TrocarTema";
 
 type Props = {
   busca: string;
@@ -41,8 +41,8 @@ export default function BuscaPrestadores({ busca, categorias = [] }: Props) {
           idCliente: user.id,
           busca: debouncedBusca,
           categorias,
-          cidade: user.cidade,   // 🔹 pega do usuário logado
-          estado: user.estado,   // 🔹 pega do usuário logado
+          cidade: user.cidade,  
+          estado: user.estado,   
         });
         setPrestadores(data);
       } catch (error) {

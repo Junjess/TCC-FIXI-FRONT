@@ -11,8 +11,8 @@ import {
   Typography,
 } from "@mui/material";
 import dayjs from "dayjs";
-import { AgendamentoRespostaDTO } from "../services/agendamentoService"; // 🔹 usa direto do service
-import { listarAgendamentosPorCliente } from "../services/agendamentoService";
+import { AgendamentoRespostaDTO } from "../../services/agendamentoService"; 
+import { listarAgendamentosPorCliente } from "../../services/agendamentoService";
 
 type Props = {
   clienteId: number;

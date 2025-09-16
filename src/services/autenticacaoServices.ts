@@ -11,7 +11,7 @@ type CadastroCliente = {
   email: string;
   senha: string;
   telefone: string;
-  cep: string; // substitui cidade/estado
+  cep: string; 
   tipoUsuario: "CLIENTE";
 };
 
@@ -20,10 +20,10 @@ type CadastroPrestador = {
   email: string;
   senha: string;
   telefone: string;
-  cep: string; // substitui cidade/estado
+  cep: string; 
   tipoUsuario: "PRESTADOR";
   descricao: string;
-  categoriasIds: number[]; // 🔹 prestador pode ter várias categorias
+  categoriasIds: number[]; 
 };
 
 const API_URL = "http://localhost:8080/auth";

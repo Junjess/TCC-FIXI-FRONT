@@ -20,9 +20,9 @@ import {
   cancelarAgendamentoCliente,
   listarAgendamentosPorCliente,
   AgendamentoRespostaDTO,
-} from "../services/agendamentoService";
-import { salvarAvaliacao } from "../services/avaliacaoService";
-import { useUser } from "../contexts/UserContext";
+} from "../../services/agendamentoService";
+import { salvarAvaliacao } from "../../services/avaliacaoService";
+import { useUser } from "../../contexts/UserContext";
 import dayjs from "dayjs";
 
 type Props = {
@@ -34,7 +34,7 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // dialog avaliação
+
   const [avaliarOpen, setAvaliarOpen] = useState(false);
   const [avaliarNota, setAvaliarNota] = useState<number | null>(0);
   const [avaliarDescricao, setAvaliarDescricao] = useState("");
@@ -50,7 +50,6 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
     listarAgendamentosPorCliente(clienteId)
       .then((res) => {
         if (isMounted) {
-          // ✅ só tira os avaliados, deixa o resto
           setItens(res.filter((a) => !a.avaliado));
         }
       })
@@ -148,7 +147,7 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
               <CardContent>
                 <Stack direction="row" spacing={2} alignItems="center">
                   <Avatar
-                    src={ag.fotoPrestador ?? undefined}
+                    src={ag.fotoPrestador ? `data:image/jpeg;base64,${ag.fotoPrestador}` : undefined}
                     alt={ag.nomePrestador}
                     sx={{ width: 64, height: 64, fontSize: 24 }}
                   >

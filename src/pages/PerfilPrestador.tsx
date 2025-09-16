@@ -7,9 +7,6 @@ import {
   Avatar,
   Stack,
   Rating,
-  AppBar,
-  Toolbar,
-  IconButton,
   Button,
   Card,
   Divider,
@@ -22,8 +19,11 @@ import {
   Alert,
   Tooltip,
   Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
-import { Search, SmartToy, AccountCircle, History, Home } from "@mui/icons-material";
 import {
   buscarPrestadorPorId,
   PrestadorDetalhesDTO,
@@ -32,11 +32,11 @@ import {
   solicitarAgendamento,
   Periodo,
   listarAgendaPrestador,
-  AgendaPrestadorDTO,
 } from "../services/agendamentoService";
 import TrocarTema from "../components/TrocarTema";
 import { useUser } from "../contexts/UserContext";
 import dayjs from "dayjs";
+import HeaderCliente from "../components/cliente/HeaderCliente";
 
 export default function PerfilPrestador() {
   const { id } = useParams<{ id: string }>();
@@ -51,8 +51,10 @@ export default function PerfilPrestador() {
   const [snackbarError, setSnackbarError] = useState(false);
 
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const theme = useTheme();
+
+  const [categoriaId, setCategoriaId] = useState<string>("");
 
   useEffect(() => {
     if (!id) return;
@@ -72,9 +74,15 @@ export default function PerfilPrestador() {
   }, [id]);
 
   const handleAgendar = async (data: string, periodo: Periodo) => {
-    if (!id || !user) return;
+    if (!id || !user || !categoriaId) {
+      setSnackbarMsg("⚠️ Selecione uma categoria antes de agendar.");
+      setSnackbarError(true);
+      setSnackbarOpen(true);
+      return;
+    }
+
     try {
-      await solicitarAgendamento(user.id, Number(id), data, periodo);
+      await solicitarAgendamento(user.id, Number(id), categoriaId, data, periodo);
       setSnackbarMsg("✅ Agendamento solicitado com sucesso!");
       setSnackbarError(false);
       setDialogOpen(false);
@@ -83,7 +91,7 @@ export default function PerfilPrestador() {
         err.response?.status === 400 &&
         err.response?.data?.includes("já possui")
       ) {
-        setSnackbarMsg("⚠️ Você já possui um agendamento ativo nesse dia.");
+        setSnackbarMsg("⚠️ Você já possui um agendamento ativo nesse período.");
       } else {
         setSnackbarMsg(err.message || "Erro ao solicitar agendamento.");
       }
@@ -106,19 +114,13 @@ export default function PerfilPrestador() {
 
         const ocupados = agenda
           .filter(
-            (a) => a.data === data && a.statusAgendamento === "ACEITO"
+            (a) =>
+              a.data === data &&
+              (a.statusAgendamento === "PENDENTE" || a.statusAgendamento === "ACEITO")
           )
           .map((a) => a.periodo as Periodo);
 
-        const clienteTemAgendamento = agenda.some(
-          (a) =>
-            a.data === data &&
-            a.statusAgendamento !== "RECUSADO" &&
-            (a as AgendaPrestadorDTO).idAgendamento &&
-            user.id
-        );
-
-        return { data, ocupados, bloqueadoCliente: clienteTemAgendamento };
+        return { data, ocupados, bloqueadoCliente: false };
       });
 
       setAgendaDias(dias);
@@ -149,57 +151,14 @@ export default function PerfilPrestador() {
     <Box
       sx={{ minHeight: "100vh", backgroundColor: theme.palette.background.paper }}
     >
-      {/* HEADER */}
-      <AppBar position="static" sx={{ backgroundColor: "#395195" }}>
-        <Toolbar>
-          <Box
-            component="img"
-            src={require("../assets/LogoFixiDark.png")}
-            alt="Logo Fixi"
-            sx={{ width: 80, height: 40, cursor: "pointer" }}
-            onClick={() => navigate("/home/cliente")}
-          />
-
-          <Box sx={{ ml: "auto" }}>
-            <Button
-              color="inherit"
-              startIcon={<Home />}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-              onClick={() => navigate("/home/cliente")}
-            >
-              Início
-            </Button>
-            <Button
-              color="inherit"
-              startIcon={<Search />}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-              onClick={() => navigate("/search")}
-            >
-              Procurar Serviço
-            </Button>
-
-            <Button
-              color="inherit"
-              startIcon={<SmartToy />}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-            >
-              IA Recomendações
-            </Button>
-
-            <Button
-              color="inherit"
-              startIcon={<History />}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-            >
-              Histórico
-            </Button>
-          </Box>
-
-          <IconButton color="inherit">
-            <AccountCircle />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+      {/* HEADER reaproveitado */}
+      <HeaderCliente
+        onEditarPerfil={() => navigate("/home/cliente")} // aqui não abre dialog, apenas navega
+        onLogout={() => {
+          setUser(null);
+          navigate("/main");
+        }}
+      />
 
       {/* PERFIL DO PRESTADOR */}
       <Box sx={{ p: 4 }}>
@@ -213,7 +172,7 @@ export default function PerfilPrestador() {
         >
           <Stack direction="row" spacing={3} alignItems="center">
             <Avatar
-              src={prestador.foto}
+              src={prestador.foto ? `data:image/jpeg;base64,${prestador.foto}` : undefined}
               sx={{ width: 100, height: 100, fontSize: 32 }}
             >
               {prestador.nome[0]}
@@ -302,20 +261,28 @@ export default function PerfilPrestador() {
       </Box>
 
       {/* Dialog de agendamento */}
-      <Dialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        fullWidth
-        maxWidth="sm"
-      >
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Solicitar Agendamento</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2}>
-            {agendaDias.map((dia) => (
-              <Box
-                key={dia.data}
-                sx={{ border: "1px solid #ddd", borderRadius: 2, p: 2 }}
+            <FormControl fullWidth>
+              <InputLabel id="categoria-label">Categoria</InputLabel>
+              <Select
+                labelId="categoria-label"
+                value={categoriaId ?? ""}
+                onChange={(e) => setCategoriaId(e.target.value)}
               >
+                {prestador?.categorias?.map((c, idx) => (
+                  <MenuItem key={idx} value={c.nomeCategoria}>
+                    {c.nomeCategoria}
+                    {c.descricao ? ` - ${c.descricao}` : ""}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {agendaDias.map((dia) => (
+              <Box key={dia.data} sx={{ border: "1px solid #ddd", borderRadius: 2, p: 2 }}>
                 <Typography variant="subtitle1" fontWeight="bold">
                   {dayjs(dia.data).format("dddd, DD/MM")}
                 </Typography>
@@ -326,8 +293,8 @@ export default function PerfilPrestador() {
                     const motivo = ocupado
                       ? "Já existe um agendamento ACEITO nesse período"
                       : dia.bloqueadoCliente
-                        ? "Você já possui um agendamento nesse dia"
-                        : undefined;
+                      ? "Você já possui um agendamento nesse dia"
+                      : undefined;
 
                     const disabled = ocupado || dia.bloqueadoCliente;
 
@@ -357,11 +324,7 @@ export default function PerfilPrestador() {
       </Dialog>
 
       {/* Snackbar */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
-      >
+      <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)}>
         <Alert
           severity={snackbarError ? "error" : "success"}
           sx={{ width: "100%" }}

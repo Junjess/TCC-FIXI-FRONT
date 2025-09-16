@@ -50,11 +50,6 @@ const serviceTypes = [
   { id: 14, nome: "Consultor de TI" },
 ];
 
-
-const categoriasIds = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-];
-
 type SnackbarType = {
   open: boolean;
   message: string;
@@ -140,44 +135,44 @@ const MainPage: React.FC = () => {
     }
   };
 
-  const buscarCep = async (valor: string) => {
-    const cepLimpo = valor.replace(/\D/g, "");
-    setCep(valor);
+    const buscarCep = async (valor: string) => {
+      const cepLimpo = valor.replace(/\D/g, "");
+      setCep(valor);
 
-    if (cepLimpo.length < 8) {
-      setCidade("");
-      setEstado("");
-      return;
-    }
+      if (cepLimpo.length < 8) {
+        setCidade("");
+        setEstado("");
+        return;
+      }
 
-    if (cepLimpo.length === 8) {
-      try {
-        const resp = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-        const data = await resp.json();
+      if (cepLimpo.length === 8) {
+        try {
+          const resp = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+          const data = await resp.json();
 
-        if (!data.erro) {
-          setCidade(data.localidade || "");
-          setEstado(data.uf || "");
-        } else {
+          if (!data.erro) {
+            setCidade(data.localidade || "");
+            setEstado(data.uf || "");
+          } else {
+            setCidade("");
+            setEstado("");
+            setSnackbar({
+              open: true,
+              message: "CEP não encontrado",
+              severity: "warning",
+            });
+          }
+        } catch {
           setCidade("");
           setEstado("");
           setSnackbar({
             open: true,
-            message: "CEP não encontrado",
-            severity: "warning",
+            message: "Erro ao buscar CEP",
+            severity: "error",
           });
         }
-      } catch {
-        setCidade("");
-        setEstado("");
-        setSnackbar({
-          open: true,
-          message: "Erro ao buscar CEP",
-          severity: "error",
-        });
       }
-    }
-  };
+    };
 
   const cadastro = async () => {
     const errors: string[] = [];

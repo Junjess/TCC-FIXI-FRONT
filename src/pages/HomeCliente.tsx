@@ -1,11 +1,7 @@
 import React, { useState } from "react";
 import {
-  AppBar,
-  Toolbar,
   Typography,
-  IconButton,
   Box,
-  Button,
   Container,
   Card,
   Dialog,
@@ -13,28 +9,22 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Avatar,
   Stack,
   useTheme,
   CircularProgress,
+  Button,
 } from "@mui/material";
-import {
-  Search,
-  SmartToy,
-  AccountCircle,
-  CalendarMonth,
-  History,
-  Home,
-} from "@mui/icons-material";
+import { CalendarMonth } from "@mui/icons-material";
 import TrocarTema from "../components/TrocarTema";
 import { useUser } from "../contexts/UserContext";
-import AgendamentosClienteList from "../components/AgendamentosClienteList";
+import AgendamentosClienteList from "../components/cliente/AgendamentosClienteList";
 import { useNavigate } from "react-router-dom";
 import {
   atualizarCliente,
   atualizarFotoCliente,
   ClienteDTO,
 } from "../services/clienteService";
+import HeaderCliente from "../components/cliente/HeaderCliente";
 
 const HomeCliente: React.FC = () => {
   const theme = useTheme();
@@ -78,13 +68,11 @@ const HomeCliente: React.FC = () => {
     try {
       setLoading(true);
 
-      // 🔹 Atualiza dados básicos (apenas campos alterados)
       if (Object.keys(formData).length > 0) {
         const updated = await atualizarCliente(user.id, formData);
         setUser(updated);
       }
 
-      // 🔹 Atualiza foto se foi escolhida
       if (fotoFile) {
         const updated = await atualizarFotoCliente(user.id, fotoFile);
         setUser(updated);
@@ -104,62 +92,13 @@ const HomeCliente: React.FC = () => {
       sx={{ minHeight: "100vh", backgroundColor: theme.palette.background.paper }}
     >
       {/* HEADER */}
-      <AppBar position="static" sx={{ backgroundColor: "#395195" }}>
-        <Toolbar>
-          <Box
-            component="img"
-            src={require("../assets/LogoFixiDark.png")}
-            alt="Logo Fixi"
-            sx={{ width: 80, height: 40, cursor: "pointer" }}
-          />
-
-          <Box sx={{ ml: "auto" }}>
-            <Button
-              color="inherit"
-              startIcon={<Home />}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-              onClick={() => navigate("/home/cliente")}
-            >
-              Início
-            </Button>
-            <Button
-              color="inherit"
-              startIcon={<Search />}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-              onClick={() => navigate("/search")}
-            >
-              Procurar Serviço
-            </Button>
-            <Button
-              color="inherit"
-              startIcon={<SmartToy />}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-            >
-              IA Recomendações
-            </Button>
-            <Button
-              color="inherit"
-              startIcon={<History />}
-              onClick={() => navigate("/historico/cliente")}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-            >
-              Histórico
-            </Button>
-          </Box>
-
-          {/* Perfil */}
-          <IconButton color="inherit" onClick={handleOpenDialog}>
-            {user.foto ? (
-              <Avatar
-                src={`data:image/jpeg;base64,${user.foto}`}
-                alt={user.nome}
-              />
-            ) : (
-              <AccountCircle />
-            )}
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+      <HeaderCliente
+        onEditarPerfil={handleOpenDialog}
+        onLogout={() => {
+          setUser(null);
+          navigate("/main");
+        }}
+      />
 
       {/* CONTEÚDO */}
       <Container sx={{ mt: 5 }}>

@@ -14,7 +14,7 @@ export const lightTheme = createTheme({
       contrastText: '#395195', // texto azul escuro
     },
     background: {
-      default: '#ffffff',  // fundo branco
+      default: '#e6e6e6ff',  // fundo branco
       paper: '#ffffff',    // papel branco
     },
     text: {
@@ -41,7 +41,7 @@ export const darkTheme = createTheme({
       contrastText: '#395195',
     },
     background: {
-      default: '#23262c',
+      default: '#343434ff',
       paper: '#0d1117',
     },
     text: {

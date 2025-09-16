@@ -1,43 +1,35 @@
 import React, { useState, useEffect } from "react";
 import {
-  AppBar,
-  Toolbar,
-  TextField,
-  InputAdornment,
-  Button,
-  IconButton,
   Box,
-  useTheme,
-  InputLabel,
+  Button,
   Chip,
   Stack,
   Container,
   Card,
   CircularProgress,
+  TextField,
+  InputAdornment,
+  InputLabel,
   Avatar,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import SmartToy from "@mui/icons-material/SmartToy";
-import AccountCircle from "@mui/icons-material/AccountCircle";
-import History from "@mui/icons-material/History";
-import BuscaPrestadores from "../components/BuscaPrestadores";
+import BuscaPrestadores from "../components/cliente/BuscaPrestadores";
 import { CategoriaDTO, listarCategorias } from "../services/categoriaService";
 import { useUser } from "../contexts/UserContext";
-import { useNavigate } from "react-router-dom";
-import { Home, Search } from "@mui/icons-material";
+import { useTheme } from "@mui/material/styles";
 import {
   atualizarCliente,
   atualizarFotoCliente,
   ClienteDTO,
 } from "../services/clienteService";
+import HeaderCliente from "../components/cliente/HeaderCliente";
 
 export default function PageProcurarServico() {
   const theme = useTheme();
   const [busca, setBusca] = useState("");
 
   const { user, setUser } = useUser();
-  const navigate = useNavigate();
   const [openFiltros, setOpenFiltros] = useState(false);
   const [categorias, setCategorias] = useState<CategoriaDTO[]>([]);
   const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<number[]>([]);
@@ -87,110 +79,15 @@ export default function PageProcurarServico() {
     );
   };
 
-  const handleOpenDialog = () => {
-    setFormData({
-      nome: user.nome,
-      email: user.email,
-      telefone: user.telefone,
-      cidade: user.cidade,
-      estado: user.estado,
-    });
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setFotoFile(null);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSave = async () => {
-    try {
-      setLoading(true);
-
-      if (Object.keys(formData).length > 0) {
-        const updated = await atualizarCliente(user.id, formData);
-        setUser(updated);
-      }
-
-      if (fotoFile) {
-        const updated = await atualizarFotoCliente(user.id, fotoFile);
-        setUser(updated);
-      }
-
-      handleCloseDialog();
-    } catch (err) {
-      console.error("Erro ao atualizar cliente", err);
-      alert("Erro ao atualizar cliente");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const limparFiltros = () => setCategoriasSelecionadas([]);
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: theme.palette.background.paper }}>
-      {/* HEADER */}
-      <AppBar position="static" sx={{ backgroundColor: "#395195" }}>
-        <Toolbar>
-          <Box
-            component="img"
-            src={require("../assets/LogoFixiDark.png")}
-            alt="Logo Fixi"
-            sx={{ width: 80, height: 40, cursor: "pointer" }}
-          />
-
-          <Box sx={{ ml: "auto" }}>
-            <Button
-              color="inherit"
-              startIcon={<Home />}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-              onClick={() => navigate("/home/cliente")}
-            >
-              Início
-            </Button>
-            <Button
-              color="inherit"
-              startIcon={<Search />}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-              onClick={() => navigate("/search")}
-            >
-              Procurar Serviço
-            </Button>
-            <Button
-              color="inherit"
-              startIcon={<SmartToy />}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-            >
-              IA Recomendações
-            </Button>
-            <Button
-              color="inherit"
-              startIcon={<History />}
-              onClick={() => navigate("/historico/cliente")}
-              sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-            >
-              Histórico
-            </Button>
-          </Box>
-
-          {/* Perfil */}
-          <IconButton color="inherit" onClick={handleOpenDialog}>
-            {user.foto ? (
-              <Avatar
-                src={`data:image/jpeg;base64,${user.foto}`}
-                alt={user.nome}
-              />
-            ) : (
-              <AccountCircle />
-            )}
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+      {/* 🔹 Usa a HeaderCliente unificada */}
+      <HeaderCliente
+        onEditarPerfil={() => setOpenDialog(true)}
+        onLogout={() => setUser(null)}
+      />
 
       <Container sx={{ mt: 5 }}>
         <Card
@@ -201,42 +98,43 @@ export default function PageProcurarServico() {
             p: 3,
           }}
         >
-          <TextField
-            placeholder="Buscar serviços..."
-            variant="outlined"
-            size="small"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            sx={{
-              flex: 1,
-              mr: 2,
-              backgroundColor: theme.palette.background.default,
-              borderRadius: 2,
-              input: { color: theme.palette.text.primary },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="primary" />
-                </InputAdornment>
-              ),
-            }}
-          />
+          <Stack direction="row" spacing={2}>
+            <TextField
+              placeholder="Buscar serviços..."
+              variant="outlined"
+              size="small"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              sx={{
+                flex: 1,
+                backgroundColor: theme.palette.background.default,
+                borderRadius: 2,
+                input: { color: theme.palette.text.primary },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="primary" />
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<FilterListIcon />}
-            onClick={() => setOpenFiltros(true)}
-            sx={{
-              fontWeight: "bold",
-              backgroundColor: "primary.main",
-              color: "secondary.main",
-              "&:hover": { backgroundColor: "#2e3e75" },
-            }}
-          >
-            Filtros
-          </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<FilterListIcon />}
+              onClick={() => setOpenFiltros(true)}
+              sx={{
+                fontWeight: "bold",
+                backgroundColor: "primary.main",
+                color: "secondary.main",
+                "&:hover": { backgroundColor: "#2e3e75" },
+              }}
+            >
+              Filtros
+            </Button>
+          </Stack>
 
           {categoriasSelecionadas.length > 0 && (
             <Stack direction="row" spacing={1} sx={{ p: 2, flexWrap: "wrap" }}>
@@ -268,8 +166,8 @@ export default function PageProcurarServico() {
         </Card>
       </Container>
 
-      {/* Dialogs de filtro e editar perfil permanecem iguais */}
-      ...
+      {/* 🔹 Aqui você mantém seus Dialogs de filtro e editar perfil */}
+      {/* Ex: <Dialog open={openDialog} onClose={() => setOpenDialog(false)}> ... */}
     </Box>
   );
 }

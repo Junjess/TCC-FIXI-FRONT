@@ -54,7 +54,7 @@ export default function CardPrestador({
       <CardContent>
         <Stack direction="row" spacing={2} alignItems="center">
           <Avatar
-            src={foto ?? undefined}
+            src={foto ? `data:image/jpeg;base64,${foto}` : undefined}
             alt={nome}
             sx={{ width: 64, height: 64, fontSize: 24 }}
           >

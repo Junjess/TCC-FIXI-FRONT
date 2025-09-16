@@ -13,7 +13,7 @@ export type PrestadorDTO = {
   cidade: string;
   estado: string;
   descricao: string;
-  categorias: CategoriaDescricaoDTO[]; // ✅ agora é lista
+  categorias: CategoriaDescricaoDTO[];
   mediaAvaliacao: number;
 };
 

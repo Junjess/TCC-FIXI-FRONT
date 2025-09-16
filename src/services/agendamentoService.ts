@@ -1,6 +1,6 @@
 import { api } from "./api";
 
-// 🔹 Esse tipo deve refletir o que o backend manda no DTO
+// Esse tipo deve refletir o que o backend manda no DTO
 export type AgendamentoRespostaDTO = {
   idAgendamento: number;
   idPrestador: number;
@@ -11,7 +11,7 @@ export type AgendamentoRespostaDTO = {
   estadoPrestador: string | null;
   categorias: { nomeCategoria: string; descricao: string | null }[];
 
-  // 🔹 Campos do CLIENTE (para a tela HomePrestador)
+  // Campos do CLIENTE (para a tela HomePrestador)
   idCliente: number;
   nomeCliente: string;
   telefoneCliente: string | null;
@@ -28,8 +28,19 @@ export type AgendamentoRespostaDTO = {
   canceladoPor?: "CLIENTE" | "PRESTADOR" | null;
 };
 
+export type AgendamentoSolicitacaoDTO = {
+  idAgendamento: number;
+  idCliente: number;
+  nomeCliente: string;
+  telefoneCliente: string;
+  fotoCliente?: string | null;
+  data: string; // "YYYY-MM-DD"
+  periodo: string;
+  statusAgendamento: "PENDENTE" | "ACEITO" | "RECUSADO" | "CANCELADO";
+  servico?: string;
+};
 
-// 🔹 DTO usado no agendamento do prestador (para marcar horários)
+// DTO usado no agendamento do prestador (para marcar horários)
 export type AgendaPrestadorDTO = {
   idAgendamento: number;
   data: string; // "YYYY-MM-DD"
@@ -37,20 +48,21 @@ export type AgendaPrestadorDTO = {
   statusAgendamento: "PENDENTE" | "ACEITO" | "RECUSADO" | "CANCELADO";
 };
 
-// 🔹 Enum para período
+//  Enum para período
 export type Periodo = "MATUTINO" | "VESPERTINO";
 
-// 🔹 Solicitar agendamento
+// Solicitar agendamento
 export async function solicitarAgendamento(
   clienteId: number,
   prestadorId: number,
+  nomeCategoria: string,   // agora é string
   data: string,
   periodo: Periodo
 ) {
   const { data: response } = await api.post<AgendamentoRespostaDTO>(
     `/prestadores/${prestadorId}/agendamentos`,
     null,
-    { params: { clienteId, data, periodo } }
+    { params: { clienteId, nomeCategoria, data, periodo } } // 🔹 enviando nomeCategoria
   );
   return response;
 }
@@ -61,6 +73,7 @@ export async function listarAgendamentosPorCliente(
   const { data } = await api.get<AgendamentoRespostaDTO[]>(
     `/clientes/${clienteId}/agendamentos`
   );
+  console.log(data);
   return data;
 }
 
@@ -101,4 +114,24 @@ export async function cancelarAgendamentoPrestador(
   await api.put(
     `/prestadores/${prestadorId}/agendamentos/${idAgendamento}/cancelar`
   );
+}
+
+
+// 🔹 lista solicitações pendentes do prestador
+export async function listarSolicitacoesPrestador(prestadorId: number): Promise<AgendamentoSolicitacaoDTO[]> {
+  const { data } = await api.get<AgendamentoSolicitacaoDTO[]>(
+    `/prestadores/${prestadorId}/agendamentos/pendentes`
+  );
+  return data;
+}
+
+
+export async function aceitarAgendamentoPrestador(prestadorId: number, agendamentoId: number) {
+  const { data } = await api.put(`/prestadores/${prestadorId}/agendamentos/${agendamentoId}/aceitar`);
+  return data;
+}
+
+export async function recusarAgendamentoPrestador(prestadorId: number, agendamentoId: number) {
+  const { data } = await api.put(`/prestadores/${prestadorId}/agendamentos/${agendamentoId}/recusar`);
+  return data;
 }
