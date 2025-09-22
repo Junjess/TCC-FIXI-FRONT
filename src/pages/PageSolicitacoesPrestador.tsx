@@ -1,4 +1,3 @@
-// src/pages/PageSolicitacoesPrestador.tsx
 import React, { useEffect, useState } from "react";
 import {
   Avatar,
@@ -28,9 +27,11 @@ import DialogEditarPrestador from "../components/prestador/DialogEditarPrestador
 import {
   atualizarFotoPrestador,
   atualizarPrestador,
+  PrestadorProfileDTO,
 } from "../services/prestadorService";
-import { PrestadorProfileDTO } from "./HomePrestador";
+
 import HeaderPrestador from "../components/prestador/HeaderPrestador";
+import DialogDetalhesAgendamento from "../components/prestador/DialogDetalhesAgendamento";
 
 type AgendamentoSolicitacao = {
   idAgendamento: number;
@@ -65,6 +66,8 @@ const PageSolicitacoesPrestador: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [formData, setFormData] = useState<Partial<PrestadorProfileDTO>>({});
   const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [dialogDetalhesOpen, setDialogDetalhesOpen] = useState(false);
+  const [solicitacaoSelecionada, setSolicitacaoSelecionada] = useState<AgendamentoSolicitacao | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -96,6 +99,16 @@ const PageSolicitacoesPrestador: React.FC = () => {
       </Box>
     );
   }
+
+  const handleAbrirDetalhes = (s: AgendamentoSolicitacao) => {
+    setSolicitacaoSelecionada(s);
+    setDialogDetalhesOpen(true);
+  };
+
+  const handleFecharDetalhes = () => {
+    setSolicitacaoSelecionada(null);
+    setDialogDetalhesOpen(false);
+  };
 
   const handleOpenDialog = () => {
     setFormData({
@@ -254,53 +267,62 @@ const PageSolicitacoesPrestador: React.FC = () => {
                           )}
                         </Box>
 
-                        <Box minWidth={200} textAlign="right">
+                        <Box display="flex" flexDirection="column" alignItems="flex-end" flex={1}>
                           <Chip
                             label={s.statusAgendamento}
                             color={
                               s.statusAgendamento === "PENDENTE"
                                 ? "warning"
                                 : s.statusAgendamento === "ACEITO"
-                                ? "success"
-                                : "error"
+                                  ? "success"
+                                  : "error"
                             }
                             size="small"
-                            sx={{ mt: 1, mr: 5, borderRadius: "4px" }}
+                            sx={{ borderRadius: "4px", mt: 2 }}
                           />
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            justifyContent="flex-end"
-                            sx={{ mt: 1 }}
-                          >
-                            <Button
-                              variant="text"
-                              color="error"
-                              size="medium"
-                              sx={{ bgcolor: theme.palette.background.default }}
-                              disabled={processingId === s.idAgendamento}
-                              onClick={() => handleRecusar(s.idAgendamento)}
-                            >
-                              {processingId === s.idAgendamento ? (
-                                <CircularProgress size={18} />
-                              ) : (
-                                "Recusar"
-                              )}
-                            </Button>
-                            <Button
-                              variant="contained"
-                              size="medium"
-                              disabled={processingId === s.idAgendamento}
-                              onClick={() => handleAceitar(s.idAgendamento)}
-                            >
-                              {processingId === s.idAgendamento ? (
-                                <CircularProgress size={18} />
-                              ) : (
-                                "Aceitar"
-                              )}
-                            </Button>
-                          </Stack>
                         </Box>
+
+                        {/* Faixa inferior com botões */}
+                        <Stack
+                          direction="row"
+                          spacing={2}
+                          justifyContent="center"
+                          sx={{ mt: 2, pt: 2, borderTop: "1px solid #eee" }}
+                        >
+                          <Button
+                            variant="contained"
+                            color="error"
+                            disabled={processingId === s.idAgendamento}
+                            onClick={() => handleRecusar(s.idAgendamento)}
+                          >
+                            {processingId === s.idAgendamento ? (
+                              <CircularProgress size={18} />
+                            ) : (
+                              "Recusar"
+                            )}
+                          </Button>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            disabled={processingId === s.idAgendamento}
+                            onClick={() => handleAceitar(s.idAgendamento)}
+                          >
+                            {processingId === s.idAgendamento ? (
+                              <CircularProgress size={18} />
+                            ) : (
+                              "Aceitar"
+                            )}
+                          </Button>
+                          <Button
+                            variant="contained"
+                            color="inherit"
+                            sx={{bgcolor: theme.palette.background.default}}
+                            onClick={() => handleAbrirDetalhes(s)}
+                          >
+                            Detalhes
+                          </Button>
+                        </Stack>
+
                       </Stack>
                     </CardContent>
                   </Card>
@@ -311,6 +333,55 @@ const PageSolicitacoesPrestador: React.FC = () => {
         </Card>
       </Container>
 
+      <DialogDetalhesAgendamento
+        open={dialogDetalhesOpen}
+        agendamento={
+          solicitacaoSelecionada
+            ? {
+              // 🔹 campos obrigatórios do DTO
+              idAgendamento: solicitacaoSelecionada.idAgendamento,
+
+              // prestador
+              idPrestador: user.id,
+              nomePrestador: user.nome,
+              telefonePrestador: user.telefone ?? "",
+              fotoPrestador: user.foto ?? null,
+              cidadePrestador: user.cidade ?? "",
+              estadoPrestador: user.estado ?? "",
+              categoriaAgendamento: solicitacaoSelecionada.servico ?? null,
+
+              // cliente
+              idCliente: solicitacaoSelecionada.idCliente,
+              nomeCliente: solicitacaoSelecionada.nomeCliente ?? "Cliente",
+              telefoneCliente: solicitacaoSelecionada.telefoneCliente ?? "",
+              fotoCliente: solicitacaoSelecionada.fotoCliente ?? null,
+              cidadeCliente: "", // ainda não vem no DTO da solicitação
+              estadoCliente: "", // idem
+
+              // agendamento
+              data: solicitacaoSelecionada.data,
+              periodo: solicitacaoSelecionada.periodo,
+              statusAgendamento: solicitacaoSelecionada.statusAgendamento as
+                | "ACEITO"
+                | "PENDENTE"
+                | "RECUSADO"
+                | "CANCELADO",
+              avaliado: false,
+              nota: undefined,
+              descricaoAvaliacao: undefined,
+              canceladoPor: null,
+
+              // novos campos
+              descricaoServico: (solicitacaoSelecionada as any).descricaoServico ?? "",
+              valorSugerido:
+                (solicitacaoSelecionada as any).valorSugerido ?? null, // pode adaptar se ainda não vem
+            }
+            : null
+        }
+        onClose={handleFecharDetalhes}
+        formatarTelefone={formatarTelefone}
+      />
+
       <DialogEditarPrestador
         open={openDialog}
         onClose={handleCloseDialog}
@@ -320,16 +391,17 @@ const PageSolicitacoesPrestador: React.FC = () => {
           try {
             setLoadingSalvar(true);
 
+            let updated = user;
+
             if (Object.keys(formData).length > 0) {
-              const updated = await atualizarPrestador(user.id, formData);
-              setUser(updated);
+              updated = await atualizarPrestador(user.id, formData);
             }
 
             if (fotoFile) {
-              const updated = await atualizarFotoPrestador(user.id, fotoFile);
-              setUser(updated);
+              updated = await atualizarFotoPrestador(user.id, fotoFile);
             }
 
+            setUser(updated); // ✅ atualiza o contexto
             handleCloseDialog();
           } catch (err) {
             console.error("Erro ao atualizar prestador", err);

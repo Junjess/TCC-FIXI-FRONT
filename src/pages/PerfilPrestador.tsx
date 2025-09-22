@@ -23,6 +23,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  TextField,
 } from "@mui/material";
 import {
   buscarPrestadorPorId,
@@ -55,6 +56,8 @@ export default function PerfilPrestador() {
   const theme = useTheme();
 
   const [categoriaId, setCategoriaId] = useState<string>("");
+  const [descricaoServico, setDescricaoServico] = useState("");
+  const [valorSugerido, setValorSugerido] = useState<number | "">("");
 
   useEffect(() => {
     if (!id) return;
@@ -82,10 +85,21 @@ export default function PerfilPrestador() {
     }
 
     try {
-      await solicitarAgendamento(user.id, Number(id), categoriaId, data, periodo);
+      await solicitarAgendamento(
+        user.id,
+        Number(id),
+        categoriaId,
+        data,
+        periodo,
+        descricaoServico,
+        valorSugerido === "" ? null : Number(valorSugerido)
+      );
+
       setSnackbarMsg("✅ Agendamento solicitado com sucesso!");
       setSnackbarError(false);
       setDialogOpen(false);
+      setDescricaoServico("");
+      setValorSugerido("");
     } catch (err: any) {
       if (
         err.response?.status === 400 &&
@@ -281,8 +295,32 @@ export default function PerfilPrestador() {
               </Select>
             </FormControl>
 
+            {/* 🔹 Campo de descrição do serviço */}
+            <TextField
+              label="Descrição do serviço"
+              fullWidth
+              multiline
+              rows={3}
+              value={descricaoServico}
+              onChange={(e) => setDescricaoServico(e.target.value)}
+            />
+
+            {/* 🔹 Campo de valor sugerido */}
+            <TextField
+              label="Valor sugerido (R$)"
+              type="number"
+              fullWidth
+              value={valorSugerido}
+              onChange={(e) =>
+                setValorSugerido(e.target.value === "" ? "" : Number(e.target.value))
+              }
+            />
+
             {agendaDias.map((dia) => (
-              <Box key={dia.data} sx={{ border: "1px solid #ddd", borderRadius: 2, p: 2 }}>
+              <Box
+                key={dia.data}
+                sx={{ border: "1px solid #ddd", borderRadius: 2, p: 2 }}
+              >
                 <Typography variant="subtitle1" fontWeight="bold">
                   {dayjs(dia.data).format("dddd, DD/MM")}
                 </Typography>
@@ -293,8 +331,8 @@ export default function PerfilPrestador() {
                     const motivo = ocupado
                       ? "Já existe um agendamento ACEITO nesse período"
                       : dia.bloqueadoCliente
-                      ? "Você já possui um agendamento nesse dia"
-                      : undefined;
+                        ? "Você já possui um agendamento nesse dia"
+                        : undefined;
 
                     const disabled = ocupado || dia.bloqueadoCliente;
 
@@ -317,6 +355,7 @@ export default function PerfilPrestador() {
               </Box>
             ))}
           </Stack>
+
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Fechar</Button>

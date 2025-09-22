@@ -15,6 +15,8 @@ import {
   Stack,
   TextField,
   Typography,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import {
   cancelarAgendamentoCliente,
@@ -24,6 +26,7 @@ import {
 import { salvarAvaliacao } from "../../services/avaliacaoService";
 import { useUser } from "../../contexts/UserContext";
 import dayjs from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 
 type Props = {
   clienteId: number;
@@ -39,6 +42,16 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
   const [avaliarNota, setAvaliarNota] = useState<number | null>(0);
   const [avaliarDescricao, setAvaliarDescricao] = useState("");
   const [avaliarAgendamentoId, setAvaliarAgendamentoId] = useState<number | null>(null);
+  const [cancelando, setCancelando] = useState<Set<number>>(new Set());
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const { user } = useUser();
 
@@ -50,12 +63,26 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
     listarAgendamentosPorCliente(clienteId)
       .then((res) => {
         if (isMounted) {
-          setItens(res.filter((a) => !a.avaliado));
+          const hoje = dayjs().startOf("day");
+
+          const filtrados = res.filter((a) => {
+            const dataAg = dayjs(a.data).startOf("day");
+
+            const aindaValido = dataAg.valueOf() >= hoje.valueOf();
+
+            const naoCancelado = a.statusAgendamento !== "CANCELADO";
+            const naoAvaliado = !a.avaliado;
+
+            return aindaValido && naoCancelado && naoAvaliado;
+          });
+
+          setItens(filtrados);
         }
       })
       .catch((e) => {
+        console.error("Erro ao carregar agendamentos:", e);
         if (isMounted)
-          setErro(e?.response?.data?.message ?? "Falha ao carregar agendamentos.");
+          setErro(e?.response?.data?.message ?? e.message ?? "Falha ao carregar agendamentos.");
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -66,15 +93,36 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
     };
   }, [clienteId]);
 
+
   async function handleCancelar(idAgendamento: number) {
     if (!user) return;
     try {
-      await cancelarAgendamentoCliente(idAgendamento, user.id);
+      setCancelando((prev) => new Set(prev).add(idAgendamento));
+
+      const resp = await cancelarAgendamentoCliente(idAgendamento, user.id);
       setItens((prev) => prev.filter((a) => a.idAgendamento !== idAgendamento));
+
+      setSnackbar({
+        open: true,
+        message: resp?.message || "Agendamento cancelado e e-mail enviado!",
+        severity: "success",
+      });
     } catch (e) {
       console.error("Erro ao cancelar agendamento:", e);
+      setSnackbar({
+        open: true,
+        message: "Erro ao cancelar agendamento.",
+        severity: "error",
+      });
+    } finally {
+      setCancelando((prev) => {
+        const next = new Set(prev);
+        next.delete(idAgendamento);
+        return next;
+      });
     }
   }
+
 
   function abrirAvaliar(idAgendamento: number) {
     setAvaliarAgendamentoId(idAgendamento);
@@ -159,15 +207,15 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
                       <Typography variant="h6" fontWeight="bold">
                         {ag.nomePrestador}
                       </Typography>
-                      {ag.categorias?.map((cat, i) => (
+                      {ag.categoriaAgendamento && (
                         <Chip
-                          key={i}
+                          key={ag.idAgendamento}
                           size="small"
                           color="primary"
-                          label={cat.nomeCategoria}
+                          label={ag.categoriaAgendamento}
                           sx={{ fontWeight: 500 }}
                         />
-                      ))}
+                      )}
                     </Stack>
 
                     <Typography variant="body2" color="text.secondary">
@@ -199,9 +247,11 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
                           size="small"
                           sx={{ mt: 1 }}
                           onClick={() => handleCancelar(ag.idAgendamento)}
+                          disabled={cancelando.has(ag.idAgendamento)}
                         >
-                          Cancelar
+                          {cancelando.has(ag.idAgendamento) ? "Cancelando..." : "Cancelar"}
                         </Button>
+
                       </>
                     )}
 
@@ -238,6 +288,18 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
           );
         })}
       </Stack>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity={snackbar.severity} sx={{ width: "100%" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
 
       <Dialog open={avaliarOpen} onClose={() => setAvaliarOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Avaliar Serviço</DialogTitle>

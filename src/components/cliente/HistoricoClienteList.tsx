@@ -11,7 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import dayjs from "dayjs";
-import { AgendamentoRespostaDTO } from "../../services/agendamentoService"; 
+import { AgendamentoRespostaDTO } from "../../services/agendamentoService";
 import { listarAgendamentosPorCliente } from "../../services/agendamentoService";
 
 type Props = {
@@ -108,17 +108,16 @@ export default function HistoricoClienteList({ clienteId }: Props) {
                   <Typography variant="h6" fontWeight="bold">
                     {ag.nomePrestador}
                   </Typography>
-                  {ag.categorias?.map((cat, i) => (
+
+                  {ag.categoriaAgendamento && (
                     <Chip
-                      key={i}
                       size="small"
                       color="primary"
-                      label={cat.nomeCategoria}
+                      label={ag.categoriaAgendamento}
                       sx={{ fontWeight: 500 }}
                     />
-                  ))}
+                  )}
                 </Stack>
-
                 <Typography variant="body2" color="text.secondary">
                   {ag.cidadePrestador ?? "-"}
                   {ag.estadoPrestador ? `, ${ag.estadoPrestador}` : ""}

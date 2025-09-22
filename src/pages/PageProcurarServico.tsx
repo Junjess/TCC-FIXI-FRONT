@@ -11,9 +11,16 @@ import {
   InputAdornment,
   InputLabel,
   Avatar,
+  Drawer,
+  Typography,
+  IconButton,
+  DialogContent,
+  DialogActions,
+  Dialog,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import CloseIcon from "@mui/icons-material/Close";
 import BuscaPrestadores from "../components/cliente/BuscaPrestadores";
 import { CategoriaDTO, listarCategorias } from "../services/categoriaService";
 import { useUser } from "../contexts/UserContext";
@@ -24,6 +31,7 @@ import {
   ClienteDTO,
 } from "../services/clienteService";
 import HeaderCliente from "../components/cliente/HeaderCliente";
+import TrocarTema from "../components/TrocarTema";
 
 export default function PageProcurarServico() {
   const theme = useTheme();
@@ -166,8 +174,103 @@ export default function PageProcurarServico() {
         </Card>
       </Container>
 
-      {/* 🔹 Aqui você mantém seus Dialogs de filtro e editar perfil */}
-      {/* Ex: <Dialog open={openDialog} onClose={() => setOpenDialog(false)}> ... */}
+      {/* 🔹 Dialog de filtros */}
+      <Dialog
+        open={openFiltros}
+        onClose={() => setOpenFiltros(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: "16px",
+            p: 2,
+            backgroundColor: theme.palette.background.default,
+          },
+        }}
+      >
+        <Box>
+          {/* Cabeçalho */}
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ mb: 2 }}
+          >
+            <Typography variant="h6" fontWeight="bold" color="primary">
+              Filtros
+            </Typography>
+            <IconButton onClick={() => setOpenFiltros(false)} color="primary">
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+
+          {/* Conteúdo */}
+          <DialogContent dividers sx={{ borderRadius: 2 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>
+              Categorias
+            </Typography>
+
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                backgroundColor: theme.palette.background.paper,
+                boxShadow: 1,
+              }}
+            >
+              <Stack
+                direction="row"
+                flexWrap="wrap"
+                gap={1.5}
+                useFlexGap
+              >
+                {categorias.map((cat) => (
+                  <Chip
+                    key={cat.id}
+                    label={cat.nome}
+                    clickable
+                    onClick={() => toggleCategoria(cat.id)}
+                    color={
+                      categoriasSelecionadas.includes(cat.id)
+                        ? "primary"
+                        : "default"
+                    }
+                    variant={
+                      categoriasSelecionadas.includes(cat.id)
+                        ? "filled"
+                        : "outlined"
+                    }
+                    sx={{
+                      fontWeight: categoriasSelecionadas.includes(cat.id)
+                        ? 600
+                        : 400,
+                      borderRadius: "16px",
+                      px: 1.5,
+                      py: 0.5,
+                    }}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          </DialogContent>
+
+          {/* Ações */}
+          <DialogActions sx={{ mt: 1 }}>
+            <Button onClick={limparFiltros} variant="outlined" color="secondary">
+              Limpar
+            </Button>
+            <Button
+              onClick={() => setOpenFiltros(false)}
+              variant="contained"
+              color="primary"
+              sx={{ fontWeight: "bold" }}
+            >
+              Aplicar
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+      <TrocarTema/>
     </Box>
   );
 }

@@ -1,6 +1,5 @@
 import { api } from "./api";
 
-// Esse tipo deve refletir o que o backend manda no DTO
 export type AgendamentoRespostaDTO = {
   idAgendamento: number;
   idPrestador: number;
@@ -9,7 +8,7 @@ export type AgendamentoRespostaDTO = {
   fotoPrestador: string | null;
   cidadePrestador: string | null;
   estadoPrestador: string | null;
-  categorias: { nomeCategoria: string; descricao: string | null }[];
+  categoriaAgendamento: string | null;
 
   // Campos do CLIENTE (para a tela HomePrestador)
   idCliente: number;
@@ -26,6 +25,10 @@ export type AgendamentoRespostaDTO = {
   nota?: number;
   descricaoAvaliacao?: string;
   canceladoPor?: "CLIENTE" | "PRESTADOR" | null;
+
+  // 🔹 Novos campos
+  descricaoServico: string;
+  valorSugerido?: number | null;
 };
 
 export type AgendamentoSolicitacaoDTO = {
@@ -37,7 +40,10 @@ export type AgendamentoSolicitacaoDTO = {
   data: string; // "YYYY-MM-DD"
   periodo: string;
   statusAgendamento: "PENDENTE" | "ACEITO" | "RECUSADO" | "CANCELADO";
-  servico?: string;
+
+  // 🔹 Novos campos
+  descricaoServico: string;
+  valorSugerido?: number | null;
 };
 
 // DTO usado no agendamento do prestador (para marcar horários)
@@ -51,18 +57,29 @@ export type AgendaPrestadorDTO = {
 //  Enum para período
 export type Periodo = "MATUTINO" | "VESPERTINO";
 
-// Solicitar agendamento
+// 🔹 Solicitar agendamento (agora com novos campos)
 export async function solicitarAgendamento(
   clienteId: number,
   prestadorId: number,
-  nomeCategoria: string,   // agora é string
+  nomeCategoria: string,
   data: string,
-  periodo: Periodo
+  periodo: Periodo,
+  descricaoServico: string,
+  valorSugerido?: number | null
 ) {
   const { data: response } = await api.post<AgendamentoRespostaDTO>(
     `/prestadores/${prestadorId}/agendamentos`,
     null,
-    { params: { clienteId, nomeCategoria, data, periodo } } // 🔹 enviando nomeCategoria
+    {
+      params: {
+        clienteId,
+        nomeCategoria,
+        data,
+        periodo,
+        descricaoServico,
+        valorSugerido,
+      },
+    }
   );
   return response;
 }
@@ -95,43 +112,56 @@ export async function listarAgendamentosAceitosPorPrestador(
   const { data } = await api.get<AgendamentoRespostaDTO[]>(
     `/prestadores/${prestadorId}/agendamentos/aceitos`
   );
+  console.log(data);
   return data;
 }
 
 export async function cancelarAgendamentoCliente(
   idAgendamento: number,
   clienteId: number
-) {
-  await api.put(
+): Promise<{ message: string }> {
+  const { data } = await api.put<{ message: string }>(
     `/clientes/${clienteId}/agendamentos/${idAgendamento}/cancelar`
   );
+  return data;
 }
 
 export async function cancelarAgendamentoPrestador(
   idAgendamento: number,
   prestadorId: number
 ) {
-  await api.put(
+  const { data } = await api.put(
     `/prestadores/${prestadorId}/agendamentos/${idAgendamento}/cancelar`
   );
+  return data;
 }
 
-
 // 🔹 lista solicitações pendentes do prestador
-export async function listarSolicitacoesPrestador(prestadorId: number): Promise<AgendamentoSolicitacaoDTO[]> {
+export async function listarSolicitacoesPrestador(
+  prestadorId: number
+): Promise<AgendamentoSolicitacaoDTO[]> {
   const { data } = await api.get<AgendamentoSolicitacaoDTO[]>(
     `/prestadores/${prestadorId}/agendamentos/pendentes`
   );
   return data;
 }
 
-
-export async function aceitarAgendamentoPrestador(prestadorId: number, agendamentoId: number) {
-  const { data } = await api.put(`/prestadores/${prestadorId}/agendamentos/${agendamentoId}/aceitar`);
+export async function aceitarAgendamentoPrestador(
+  prestadorId: number,
+  agendamentoId: number
+) {
+  const { data } = await api.put(
+    `/prestadores/${prestadorId}/agendamentos/${agendamentoId}/aceitar`
+  );
   return data;
 }
 
-export async function recusarAgendamentoPrestador(prestadorId: number, agendamentoId: number) {
-  const { data } = await api.put(`/prestadores/${prestadorId}/agendamentos/${agendamentoId}/recusar`);
+export async function recusarAgendamentoPrestador(
+  prestadorId: number,
+  agendamentoId: number
+) {
+  const { data } = await api.put(
+    `/prestadores/${prestadorId}/agendamentos/${agendamentoId}/recusar`
+  );
   return data;
 }

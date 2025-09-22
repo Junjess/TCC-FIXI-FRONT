@@ -65,9 +65,7 @@ const MainPage: React.FC = () => {
   const [signupOpen, setSignupOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const [tipoUsuario, setTipoUsuario] = useState<"cliente" | "prestador">(
-    "cliente"
-  );
+  const [tipoUsuario, setTipoUsuario] = useState<"cliente" | "prestador">("cliente");
   const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<number[]>([]);
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -88,44 +86,22 @@ const MainPage: React.FC = () => {
   };
 
   const login = async () => {
-    const errors: string[] = [];
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    try {
+      if (tipoUsuario === "cliente") {
+        const resp = await loginClienteService({ email, senha, tipoUsuario: "CLIENTE" });
+        setUser(resp);
+        navigate("/home/cliente");
+      } else {
+        const resp = await loginPrestadorService({ email, senha, tipoUsuario: "PRESTADOR" });
+        setUser(resp);
+        navigate("/home/prestador");
+      }
 
-    if (!email) errors.push("Email é obrigatório");
-    else if (!emailRegex.test(email)) errors.push("Insira um email válido");
-    if (!senha) errors.push("Senha é obrigatória");
-    if (!tipoUsuario) errors.push("Tipo de usuário é obrigatório");
-
-    if (errors.length > 0) {
       setSnackbar({
         open: true,
-        message: errors.join("\n"),
-        severity: "error",
+        message: "Conta logada com sucesso!",
+        severity: "success",
       });
-      return;
-    }
-
-    try {
-      const resp =
-        tipoUsuario === "cliente"
-          ? await loginClienteService({ email, senha, tipoUsuario: "CLIENTE" })
-          : await loginPrestadorService({ email, senha, tipoUsuario: "PRESTADOR" });
-
-      if (resp.status === 200 || resp.status === 201) {
-        setSnackbar({
-          open: true,
-          message: "Conta logada com sucesso!",
-          severity: "success",
-        });
-        setUser(resp.data);
-        navigate(tipoUsuario === "cliente" ? "/home/cliente" : "/home/prestador");
-      } else {
-        setSnackbar({
-          open: true,
-          message: resp.data?.message || "Erro ao logar usuário",
-          severity: "error",
-        });
-      }
     } catch (error: any) {
       setSnackbar({
         open: true,
@@ -135,44 +111,44 @@ const MainPage: React.FC = () => {
     }
   };
 
-    const buscarCep = async (valor: string) => {
-      const cepLimpo = valor.replace(/\D/g, "");
-      setCep(valor);
+  const buscarCep = async (valor: string) => {
+    const cepLimpo = valor.replace(/\D/g, "");
+    setCep(valor);
 
-      if (cepLimpo.length < 8) {
-        setCidade("");
-        setEstado("");
-        return;
-      }
+    if (cepLimpo.length < 8) {
+      setCidade("");
+      setEstado("");
+      return;
+    }
 
-      if (cepLimpo.length === 8) {
-        try {
-          const resp = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-          const data = await resp.json();
+    if (cepLimpo.length === 8) {
+      try {
+        const resp = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+        const data = await resp.json();
 
-          if (!data.erro) {
-            setCidade(data.localidade || "");
-            setEstado(data.uf || "");
-          } else {
-            setCidade("");
-            setEstado("");
-            setSnackbar({
-              open: true,
-              message: "CEP não encontrado",
-              severity: "warning",
-            });
-          }
-        } catch {
+        if (!data.erro) {
+          setCidade(data.localidade || "");
+          setEstado(data.uf || "");
+        } else {
           setCidade("");
           setEstado("");
           setSnackbar({
             open: true,
-            message: "Erro ao buscar CEP",
-            severity: "error",
+            message: "CEP não encontrado",
+            severity: "warning",
           });
         }
+      } catch {
+        setCidade("");
+        setEstado("");
+        setSnackbar({
+          open: true,
+          message: "Erro ao buscar CEP",
+          severity: "error",
+        });
       }
-    };
+    }
+  };
 
   const cadastro = async () => {
     const errors: string[] = [];
@@ -188,7 +164,7 @@ const MainPage: React.FC = () => {
     else if (!cidade || !estado) errors.push("CEP inválido ou não localizado");
 
     if (tipoUsuario === "prestador") {
-      if (!categoriasSelecionadas) errors.push("Tipo de Serviço é obrigatório");
+      if (categoriasSelecionadas.length === 0) errors.push("Tipo de Serviço é obrigatório");
     }
 
     if (errors.length > 0) {
@@ -201,34 +177,37 @@ const MainPage: React.FC = () => {
     }
 
     try {
-      const resp =
-        tipoUsuario === "cliente"
-          ? await cadastroClienteService({
-            nome,
-            email,
-            senha,
-            telefone,
-            cep,
-            tipoUsuario: "CLIENTE",
-          })
-          : await cadastroPrestadorService({
-            nome,
-            email,
-            senha,
-            telefone,
-            cep,
-            tipoUsuario: "PRESTADOR",
-            descricao,
-            categoriasIds: categoriasSelecionadas,
-          });
+      if (tipoUsuario === "cliente") {
+        const resp = await cadastroClienteService({
+          nome,
+          email,
+          senha,
+          telefone,
+          cep,
+          tipoUsuario: "CLIENTE",
+        });
+        setUser(resp);
+        navigate("/home/cliente");
+      } else {
+        const resp = await cadastroPrestadorService({
+          nome,
+          email,
+          senha,
+          telefone,
+          cep,
+          tipoUsuario: "PRESTADOR",
+          descricao,
+          categoriasIds: categoriasSelecionadas,
+        });
+        setUser(resp);
+        navigate("/home/prestador");
+      }
 
       setSnackbar({
         open: true,
         message: "Conta criada com sucesso!",
         severity: "success",
       });
-      setUser(resp);
-      navigate(tipoUsuario === "cliente" ? "/home/cliente" : "/home/prestador");
     } catch (error: any) {
       setSnackbar({
         open: true,
@@ -239,7 +218,7 @@ const MainPage: React.FC = () => {
   };
 
   function formatTelefone(value: string) {
-    value = value.replace(/\D/g, ""); // remove tudo que não for número
+    value = value.replace(/\D/g, "");
     if (value.length > 11) value = value.slice(0, 11);
 
     if (value.length > 6) {

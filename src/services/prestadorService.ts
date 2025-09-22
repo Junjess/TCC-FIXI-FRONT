@@ -1,5 +1,18 @@
-import { PrestadorProfileDTO } from "../pages/HomePrestador";
 import { api } from "./api";
+
+export type PrestadorProfileDTO = {
+  id: number;
+  nome: string;
+  email: string;
+  telefone: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+  foto?: string;
+  mediaAvaliacao: number;
+  categorias: { id: string; descricao: string }[];
+  senha?: string;
+};
 
 export type AvaliacaoDTO = {
   nota: number;
@@ -17,24 +30,22 @@ export type PrestadorDetalhesDTO = {
   descricao: string;
   categorias: { nomeCategoria: string; descricao: string | null }[];
   mediaAvaliacao: number;
-  avaliacoes: { nota: number; clienteNome: string; descricao: string }[];
+  avaliacoes: AvaliacaoDTO[];
 };
 
-export async function buscarPrestadorPorId(
-  id: number
-): Promise<PrestadorDetalhesDTO> {
-  const { data } = await api.get<PrestadorDetalhesDTO>(
-    `/prestadores/perfil/${id}`
-  );
+// 🔹 Buscar perfil completo de prestador
+export async function buscarPrestadorPorId(id: number): Promise<PrestadorDetalhesDTO> {
+  const { data } = await api.get<PrestadorDetalhesDTO>(`/prestadores/perfil/${id}`);
   return data;
 }
 
-
+// 🔹 Utilitário: limpar telefone
 export function limparTelefone(telefone: string): string {
   if (!telefone) return "";
   return telefone.replace(/\D/g, ""); // remove tudo que não é número
 }
 
+// 🔹 Cadastro de prestador
 export async function cadastroPrestadorService(prestador: {
   nome: string;
   email: string;
@@ -52,14 +63,16 @@ export async function cadastroPrestadorService(prestador: {
   return data;
 }
 
+// 🔹 Atualizar dados do prestador
 export async function atualizarPrestador(
   id: number,
-  cliente: Partial<Omit<PrestadorProfileDTO, "id">>
+  prestador: Partial<Omit<PrestadorProfileDTO, "id">>
 ): Promise<PrestadorProfileDTO> {
-  const { data } = await api.put<PrestadorProfileDTO>(`/prestadores/atualizar/${id}`, cliente);
+  const { data } = await api.put<PrestadorProfileDTO>(`/prestadores/atualizar/${id}`, prestador);
   return data;
 }
 
+// 🔹 Atualizar foto do prestador
 export async function atualizarFotoPrestador(
   id: number,
   file: File

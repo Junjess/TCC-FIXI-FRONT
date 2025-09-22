@@ -1,4 +1,6 @@
 import axios from "axios";
+import { ClienteDTO } from "./clienteService";
+import { PrestadorProfileDTO } from "./prestadorService"; 
 
 type Login = {
   email: string;
@@ -11,7 +13,7 @@ type CadastroCliente = {
   email: string;
   senha: string;
   telefone: string;
-  cep: string; 
+  cep: string;
   tipoUsuario: "CLIENTE";
 };
 
@@ -20,37 +22,28 @@ type CadastroPrestador = {
   email: string;
   senha: string;
   telefone: string;
-  cep: string; 
+  cep: string;
   tipoUsuario: "PRESTADOR";
   descricao: string;
-  categoriasIds: number[]; 
+  categoriasIds: number[];
 };
 
 const API_URL = "http://localhost:8080/auth";
 
 // 🔹 Login Cliente
-export const loginClienteService = async (data: Login) => {
-  try {
-    const response = await axios.post(`${API_URL}/login/cliente`, data);
-    return response;
-  } catch (error: any) {
-    console.error("Erro ao logar cliente:", error);
-    throw new Error(error.response?.data || "Erro ao logar cliente");
-  }
+export const loginClienteService = async (data: Login): Promise<ClienteDTO> => {
+  const response = await axios.post<ClienteDTO>(`${API_URL}/login/cliente`, data);
+  return response.data;
 };
 
-export const loginPrestadorService = async (data: Login) => {
-  try {
-    const response = await axios.post(`${API_URL}/login/prestador`, data);
-    return response;
-  } catch (error: any) {
-    console.error("Erro ao logar prestador:", error);
-    throw new Error(error.response?.data || "Erro ao logar prestador");
-  }
+// 🔹 Login Prestador
+export const loginPrestadorService = async (data: Login): Promise<PrestadorProfileDTO> => {
+  const response = await axios.post<PrestadorProfileDTO>(`${API_URL}/login/prestador`, data);
+  return response.data; 
 };
 
 // 🔹 Cadastro Cliente
-export const cadastroClienteService = async (data: CadastroCliente) => {
+export const cadastroClienteService = async (data: CadastroCliente): Promise<ClienteDTO> => {
   try {
     const response = await axios.post(`${API_URL}/cadastro/cliente`, data);
     return response.data;
@@ -61,7 +54,7 @@ export const cadastroClienteService = async (data: CadastroCliente) => {
 };
 
 // 🔹 Cadastro Prestador
-export const cadastroPrestadorService = async (data: CadastroPrestador) => {
+export const cadastroPrestadorService = async (data: CadastroPrestador): Promise<PrestadorProfileDTO> => {
   try {
     const response = await axios.post(`${API_URL}/cadastro/prestador`, data);
     return response.data;

@@ -3,6 +3,7 @@ import {
   Avatar,
   Box,
   Button,
+  ButtonGroup,
   Card,
   CardContent,
   Chip,
@@ -15,7 +16,7 @@ import {
   Alert,
 } from "@mui/material";
 import { useUser } from "../contexts/UserContext";
-import {CalendarMonth} from "@mui/icons-material";
+import { CalendarMonth } from "@mui/icons-material";
 import TrocarTema from "../components/TrocarTema";
 import {
   listarAgendamentosAceitosPorPrestador,
@@ -23,25 +24,14 @@ import {
   cancelarAgendamentoPrestador,
 } from "../services/agendamentoService";
 import dayjs from "dayjs";
-import { CategoriaDescricaoDTO } from "../services/procuraService";
-import { atualizarFotoPrestador, atualizarPrestador } from "../services/prestadorService";
+import {
+  atualizarFotoPrestador,
+  atualizarPrestador,
+  PrestadorProfileDTO,
+} from "../services/prestadorService";
 import HeaderPrestador from "../components/prestador/HeaderPrestador";
 import DialogEditarPrestador from "../components/prestador/DialogEditarPrestador";
-
-
-export type PrestadorProfileDTO = {
-  id: number;
-  nome: string;
-  telefone: string;
-  senha: string;
-  foto: string;
-  email: string;
-  cep: string;
-  cidade: string;
-  estado: string;
-  categorias: CategoriaDescricaoDTO[];
-  mediaAvaliacao: number;
-};
+import DialogDetalhesAgendamento from "../components/prestador/DialogDetalhesAgendamento";
 
 type SnackbarType = {
   open: boolean;
@@ -54,12 +44,14 @@ const HomePrestador: React.FC = () => {
   const theme = useTheme();
 
   const [agendamentos, setAgendamentos] = useState<AgendamentoRespostaDTO[]>([]);
-
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>("todos");
   const [openDialog, setOpenDialog] = useState(false);
   const [formData, setFormData] = useState<Partial<PrestadorProfileDTO>>({});
   const [fotoFile, setFotoFile] = useState<File | null>(null);
-  
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [cancelando, setCancelando] = useState<Set<number>>(new Set());
+  const [dialogDetalhesOpen, setDialogDetalhesOpen] = useState(false);
+  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<AgendamentoRespostaDTO | null>(null);
   const [snackbar, setSnackbar] = useState<SnackbarType>({
     open: false,
     message: "",
@@ -68,13 +60,16 @@ const HomePrestador: React.FC = () => {
 
   useEffect(() => {
     if (!user) return;
+    const prestador = user as PrestadorProfileDTO;
 
     const fetchAgendamentos = async () => {
       try {
-        const data = await listarAgendamentosAceitosPorPrestador(user.id);
+        const data = await listarAgendamentosAceitosPorPrestador(prestador.id);
         const hoje = dayjs().startOf("day");
         const filtrados = data.filter(
-          (ag) => dayjs(ag.data).isSame(hoje, "day") || dayjs(ag.data).isAfter(hoje, "day")
+          (ag) =>
+            dayjs(ag.data).isSame(hoje, "day") ||
+            dayjs(ag.data).isAfter(hoje, "day")
         );
         setAgendamentos(filtrados);
       } catch (error) {
@@ -95,13 +90,26 @@ const HomePrestador: React.FC = () => {
     );
   }
 
+  const prestador = user as PrestadorProfileDTO;
+
+  // 🔹 Extrair categorias únicas dos agendamentos
+  const categoriasUnicas = Array.from(
+    new Set(agendamentos.map((ag) => ag.categoriaAgendamento).filter(Boolean))
+  );
+
+  // Filtro de categorias (usando categoriaAgendamento)
+  const agendamentosFiltrados =
+    categoriaSelecionada === "todos"
+      ? agendamentos
+      : agendamentos.filter((ag) => ag.categoriaAgendamento === categoriaSelecionada);
+
   const handleOpenDialog = () => {
     setFormData({
-      nome: user.nome,
-      email: user.email,
-      telefone: user.telefone,
-      cidade: user.cidade,
-      estado: user.estado,
+      nome: prestador.nome,
+      email: prestador.email,
+      telefone: prestador.telefone,
+      cidade: prestador.cidade,
+      estado: prestador.estado,
     });
     setOpenDialog(true);
   };
@@ -109,6 +117,16 @@ const HomePrestador: React.FC = () => {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setFotoFile(null);
+  };
+
+  const handleAbrirDetalhes = (ag: AgendamentoRespostaDTO) => {
+    setAgendamentoSelecionado(ag);
+    setDialogDetalhesOpen(true);
+  };
+
+  const handleFecharDetalhes = () => {
+    setAgendamentoSelecionado(null);
+    setDialogDetalhesOpen(false);
   };
 
   function formatarTelefone(telefone: string | null): string {
@@ -123,13 +141,30 @@ const HomePrestador: React.FC = () => {
   }
 
   const handleCancelar = async (idAgendamento: number) => {
-    if (!user) return;
     try {
-      await cancelarAgendamentoPrestador(idAgendamento, user.id);
-      setAgendamentos((prev) => prev.filter((a) => a.idAgendamento !== idAgendamento));
-    } catch (err) {
-      console.error("Erro ao cancelar agendamento:", err);
-      alert("Erro ao cancelar agendamento");
+      setCancelando((prev) => new Set(prev).add(idAgendamento));
+      const resp = await cancelarAgendamentoPrestador(idAgendamento, prestador.id);
+      setAgendamentos((prev) =>
+        prev.filter((a) => a.idAgendamento !== idAgendamento)
+      );
+      setSnackbar({
+        open: true,
+        message: resp?.message || "Agendamento cancelado e e-mail enviado!",
+        severity: "success",
+      });
+    } catch (e) {
+      console.error("Erro ao cancelar agendamento:", e);
+      setSnackbar({
+        open: true,
+        message: "Erro ao cancelar agendamento.",
+        severity: "error",
+      });
+    } finally {
+      setCancelando((prev) => {
+        const next = new Set(prev);
+        next.delete(idAgendamento);
+        return next;
+      });
     }
   };
 
@@ -139,19 +174,38 @@ const HomePrestador: React.FC = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: theme.palette.background.paper }}>
-
-      {/* HEADER */}
       <HeaderPrestador onEditarPerfil={handleOpenDialog} />
 
-      {/* CONTEÚDO */}
       <Container sx={{ mt: 5 }}>
-        {user && (
-          <Typography variant="h5" sx={{ mb: 4, fontWeight: "bold", color: "primary.main" }}>
-            👋 Bem-vindo(a), {user.nome}!
-          </Typography>
-        )}
+        <Typography
+          variant="h5"
+          sx={{ mb: 4, fontWeight: "bold", color: "primary.main" }}
+        >
+          👋 Bem-vindo(a), {prestador.nome}!
+        </Typography>
 
-        {/* Meus Agendamentos (Aceitos) */}
+        {/* FILTRO DE CATEGORIAS */}
+        <Stack spacing={2} direction="row" flexWrap="wrap" sx={{ mb: 3 }}>
+          <ButtonGroup variant="outlined" color="primary">
+            <Button
+              onClick={() => setCategoriaSelecionada("todos")}
+              variant={categoriaSelecionada === "todos" ? "contained" : "outlined"}
+            >
+              Todos
+            </Button>
+            {categoriasUnicas.map((cat, idx) => (
+              <Button
+                key={idx}
+                onClick={() => setCategoriaSelecionada(cat!)}
+                variant={categoriaSelecionada === cat ? "contained" : "outlined"}
+              >
+                {cat}
+              </Button>
+            ))}
+          </ButtonGroup>
+        </Stack>
+
+        {/* LISTA DE AGENDAMENTOS */}
         <Card
           sx={{
             backgroundColor: theme.palette.background.default,
@@ -169,11 +223,15 @@ const HomePrestador: React.FC = () => {
             <Box display="flex" justifyContent="center" mt={4}>
               <CircularProgress />
             </Box>
-          ) : agendamentos.length === 0 ? (
-            <Typography color="text.secondary">Você não possui agendamentos aceitos no momento.</Typography>
+          ) : agendamentosFiltrados.length === 0 ? (
+            <Typography color="text.secondary">
+              {categoriaSelecionada === "todos"
+                ? "Você não possui agendamentos aceitos no momento."
+                : "Você não tem agendamentos nessa categoria."}
+            </Typography>
           ) : (
             <Stack spacing={2} sx={{ mt: 2 }}>
-              {agendamentos.map((ag, idx) => {
+              {agendamentosFiltrados.map((ag, idx) => {
                 const dataAg = dayjs(ag.data);
 
                 return (
@@ -198,12 +256,9 @@ const HomePrestador: React.FC = () => {
                         </Avatar>
 
                         <Box flex={1}>
-                          <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
-                            <Typography variant="h6" fontWeight="bold">
-                              {ag.nomeCliente}
-                            </Typography>
-                          </Stack>
-
+                          <Typography variant="h6" fontWeight="bold">
+                            {ag.nomeCliente}
+                          </Typography>
                           <Typography variant="body2" color="text.secondary">
                             Telefone: {formatarTelefone(ag.telefoneCliente)}
                           </Typography>
@@ -211,11 +266,14 @@ const HomePrestador: React.FC = () => {
                             {ag.cidadeCliente}, {ag.estadoCliente}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
+                            Categoria: {ag.categoriaAgendamento}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
                             Data: {dataAg.format("DD/MM/YYYY")} — {ag.periodo}
                           </Typography>
                         </Box>
 
-                        <Stack direction="column" textAlign="right">
+                        <Stack direction="row" textAlign="right" gap={2}>
                           <Chip
                             label={ag.statusAgendamento}
                             color={
@@ -226,20 +284,31 @@ const HomePrestador: React.FC = () => {
                                   : "error"
                             }
                             size="small"
-                            sx={{ mt: 1, borderRadius: "4px" }}
+                            sx={{ mt: 1.5, borderRadius: "4px" }}
                           />
 
                           {ag.statusAgendamento === "ACEITO" && (
                             <Button
-                              variant="text"
+                              variant="contained"
                               color="error"
-                              size="medium"
-                              sx={{ mt: 1, bgcolor: theme.palette.background.default }}
+                              size="small"
+                              sx={{ mt: 1 }}
                               onClick={() => handleCancelar(ag.idAgendamento)}
+                              disabled={cancelando.has(ag.idAgendamento)}
                             >
-                              Cancelar
+                              {cancelando.has(ag.idAgendamento) ? "Cancelando..." : "Cancelar"}
                             </Button>
+
                           )}
+                          <Button
+                            variant="contained"
+                            color="inherit"
+                            size="small"
+                            sx={{ mt: 1, bgcolor: theme.palette.background.default }}
+                            onClick={() => handleAbrirDetalhes(ag)}
+                          >
+                            Detalhes
+                          </Button>
                         </Stack>
                       </Stack>
                     </CardContent>
@@ -254,22 +323,22 @@ const HomePrestador: React.FC = () => {
       <DialogEditarPrestador
         open={openDialog}
         onClose={handleCloseDialog}
-        user={user as PrestadorProfileDTO}
+        user={prestador}
         loading={loading}
         onSave={async (formData, fotoFile) => {
           try {
             setLoading(true);
+            let updated = prestador;
 
             if (Object.keys(formData).length > 0) {
-              const updated = await atualizarPrestador(user.id, formData);
-              setUser(updated);
+              updated = await atualizarPrestador(prestador.id, formData);
             }
 
             if (fotoFile) {
-              const updated = await atualizarFotoPrestador(user.id, fotoFile);
-              setUser(updated);
+              updated = await atualizarFotoPrestador(prestador.id, fotoFile);
             }
 
+            setUser(updated); // Atualiza no contexto
             handleCloseDialog();
           } catch (err) {
             console.error("Erro ao atualizar prestador", err);
@@ -278,6 +347,13 @@ const HomePrestador: React.FC = () => {
             setLoading(false);
           }
         }}
+      />
+
+      <DialogDetalhesAgendamento
+        open={dialogDetalhesOpen}
+        agendamento={agendamentoSelecionado}
+        onClose={handleFecharDetalhes}
+        formatarTelefone={formatarTelefone}
       />
 
       <Snackbar
@@ -294,7 +370,6 @@ const HomePrestador: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-
 
       <TrocarTema />
     </Box>
