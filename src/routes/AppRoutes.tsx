@@ -8,6 +8,7 @@ import PerfilPrestador from '../pages/PerfilPrestador'
 import HistoricoCliente from '../pages/HistoricoCliente'
 import PageSolicitacoesPrestador from '../pages/PageSolicitacoesPrestador'
 import MinhasAvaliacoes from '../pages/MinhasAvaliacoes'
+import PageRecomendacoes from '../pages/PageRecomendacoes'
 
 function AppRoutes() {
   return (
@@ -21,6 +22,7 @@ function AppRoutes() {
       <Route path="*" element={<Navigate to="/main" replace />} />
       <Route path="/solicitacoes" element={<PageSolicitacoesPrestador />} />
       <Route path="/avaliacoes" element={<MinhasAvaliacoes/>} />
+      <Route path="/recomendacoes" element={<PageRecomendacoes/>} />
     </Routes>
   )
 }
