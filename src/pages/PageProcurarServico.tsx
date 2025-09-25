@@ -11,7 +11,6 @@ import {
   InputAdornment,
   InputLabel,
   Avatar,
-  Drawer,
   Typography,
   IconButton,
   DialogContent,
@@ -91,11 +90,17 @@ export default function PageProcurarServico() {
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: theme.palette.background.paper }}>
-      {/* 🔹 Usa a HeaderCliente unificada */}
+      {/*Usa a HeaderCliente unificada */}
       <HeaderCliente
-        onEditarPerfil={() => setOpenDialog(true)}
+        onEditarPerfil={() => {
+          if (user) {
+            setFormData(user); 
+          }
+          setOpenDialog(true);
+        }}
         onLogout={() => setUser(null)}
       />
+
 
       <Container sx={{ mt: 5 }}>
         <Card
@@ -164,7 +169,7 @@ export default function PageProcurarServico() {
             </Stack>
           )}
 
-          {/* 🔹 Busca prestadores já filtrando por cidade/estado */}
+          {/*Busca prestadores já filtrando por cidade/estado */}
           <BuscaPrestadores
             busca={busca}
             categorias={categoriasSelecionadas}
@@ -174,7 +179,7 @@ export default function PageProcurarServico() {
         </Card>
       </Container>
 
-      {/* 🔹 Dialog de filtros */}
+      {/*Dialog de filtros */}
       <Dialog
         open={openFiltros}
         onClose={() => setOpenFiltros(false)}
@@ -270,7 +275,149 @@ export default function PageProcurarServico() {
           </DialogActions>
         </Box>
       </Dialog>
-      <TrocarTema/>
+
+      {/*Dialog de editar perfil */}
+      <Dialog
+        open={openDialog}
+        onClose={() => {
+          setOpenDialog(false);
+          setFormData({});
+          setFotoFile(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3, p: 2 } }}
+      >
+        <DialogContent>
+          <Stack spacing={2} mt={1} alignItems="center">
+            {/* Foto de perfil centralizada */}
+            <Avatar
+              src={
+                fotoFile
+                  ? URL.createObjectURL(fotoFile)
+                  : user?.foto
+                    ? `data:image/jpeg;base64,${user.foto}`
+                    : undefined
+              }
+              alt={formData.nome || "Foto"}
+              sx={{ width: 120, height: 120, mb: 2 }}
+            />
+
+            <Button variant="outlined" component="label">
+              {fotoFile ? "Foto selecionada" : "Alterar Foto"}
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={(e) =>
+                  setFotoFile(e.target.files ? e.target.files[0] : null)
+                }
+              />
+            </Button>
+
+            <TextField
+              label="Nome"
+              name="nome"
+              value={formData.nome || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, nome: e.target.value }))
+              }
+              fullWidth
+            />
+            <TextField
+              label="E-mail"
+              name="email"
+              value={formData.email || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, email: e.target.value }))
+              }
+              fullWidth
+            />
+            <TextField
+              label="Telefone"
+              name="telefone"
+              value={formData.telefone || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, telefone: e.target.value }))
+              }
+              fullWidth
+            />
+            <TextField
+              label="Cidade"
+              name="cidade"
+              value={formData.cidade || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, cidade: e.target.value }))
+              }
+              fullWidth
+            />
+            <TextField
+              label="Estado"
+              name="estado"
+              value={formData.estado || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, estado: e.target.value }))
+              }
+              fullWidth
+            />
+            <TextField
+              label="Senha"
+              name="senha"
+              type="password"
+              value={formData.senha || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, senha: e.target.value }))
+              }
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setOpenDialog(false);
+              setFormData({});
+              setFotoFile(null);
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={async () => {
+              if (!user) return;
+              try {
+                setLoading(true);
+                let updated = user;
+
+                if (Object.keys(formData).length > 0) {
+                  updated = await atualizarCliente(user.id, formData);
+                }
+
+                if (fotoFile) {
+                  updated = await atualizarFotoCliente(user.id, fotoFile);
+                }
+
+                setUser(updated);
+                setOpenDialog(false);
+                setFormData({});
+                setFotoFile(null);
+              } catch (err) {
+                console.error("Erro ao atualizar perfil", err);
+                alert("Erro ao atualizar perfil");
+              } finally {
+                setLoading(false);
+              }
+            }}
+            variant="contained"
+            disabled={loading}
+            sx={{ backgroundColor: "#395195" }}
+          >
+            {loading ? "Salvando..." : "Salvar"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <TrocarTema />
     </Box>
   );
 }

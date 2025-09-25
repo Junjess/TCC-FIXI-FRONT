@@ -33,7 +33,7 @@ export async function atualizarFotoCliente(
   const formData = new FormData();
   formData.append("file", file);
 
-  const { data } = await api.post<ClienteDTO>(`/clientes/${id}/foto`, formData, {
+  const { data } = await api.put<ClienteDTO>(`/clientes/${id}/foto`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 

@@ -13,6 +13,7 @@ import {
   useTheme,
   CircularProgress,
   Button,
+  Avatar,
 } from "@mui/material";
 import { CalendarMonth } from "@mui/icons-material";
 import TrocarTema from "../components/TrocarTema";
@@ -35,6 +36,7 @@ const HomeCliente: React.FC = () => {
   const [formData, setFormData] = useState<Partial<ClienteDTO>>({});
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [previewFoto, setPreviewFoto] = useState<string | null>(null);
 
   if (!user) {
     return (
@@ -57,7 +59,9 @@ const HomeCliente: React.FC = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
+    setFormData({});
     setFotoFile(null);
+    setPreviewFoto(null);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,6 +90,15 @@ const HomeCliente: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFotoFile(file);
+      setPreviewFoto(URL.createObjectURL(file));
+    }
+  };
+
 
   return (
     <Box
@@ -138,7 +151,25 @@ const HomeCliente: React.FC = () => {
           Editar Perfil
         </DialogTitle>
         <DialogContent>
-          <Stack spacing={2} mt={1}>
+          <Stack spacing={2} mt={1} alignItems="center">
+            {/* Foto de perfil centralizada */}
+            <Avatar
+              src={previewFoto || (user?.foto ? `data:image/jpeg;base64,${user.foto}` : undefined)}
+              alt={formData.nome || "Foto"}
+              sx={{ width: 120, height: 120, mb: 2 }}
+            />
+
+            <Button variant="outlined" component="label">
+              {fotoFile ? "Foto selecionada" : "Alterar Foto"}
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={handleFotoChange}
+              />
+            </Button>
+
+            {/* Campos do formulário */}
             <TextField
               label="Nome"
               name="nome"
@@ -182,18 +213,6 @@ const HomeCliente: React.FC = () => {
               onChange={handleChange}
               fullWidth
             />
-
-            <Button variant="outlined" component="label">
-              {fotoFile ? "Foto selecionada" : "Alterar Foto"}
-              <input
-                type="file"
-                hidden
-                accept="image/*"
-                onChange={(e) =>
-                  setFotoFile(e.target.files ? e.target.files[0] : null)
-                }
-              />
-            </Button>
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -208,6 +227,7 @@ const HomeCliente: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
 
       <TrocarTema />
     </Box>

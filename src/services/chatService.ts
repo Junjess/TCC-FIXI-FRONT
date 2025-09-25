@@ -50,3 +50,16 @@ export const atualizarTituloConversa = async (
   const res = await api.put(`/api/chat/conversa/${conversaId}/titulo`, { titulo });
   return res.data;
 };
+
+export const excluirConversa = async (id: number) => {
+  try {
+    const res = await api.delete(`/api/chat/${id}`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Erro ao excluir conversa", error);
+    throw new Error(
+      error.response?.data?.message ||
+      `Erro ao excluir conversa: ${error.response?.status}`
+    );
+  }
+};

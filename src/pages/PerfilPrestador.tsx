@@ -215,7 +215,14 @@ export default function PerfilPrestador() {
               <Stack direction="row" spacing={1} alignItems="center" mt={1}>
                 <Rating value={prestador.mediaAvaliacao} precision={0.5} readOnly />
                 <Typography variant="body2" color="text.secondary">
-                  {prestador.mediaAvaliacao.toFixed(1)} / 5
+                  Clientes: {prestador.mediaAvaliacao.toFixed(1)} / 5
+                </Typography>
+              </Stack>
+
+              <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
+                <Rating value={prestador.notaPlataforma} precision={0.5} readOnly />
+                <Typography variant="body2" color="text.secondary">
+                  Plataforma: {prestador.notaPlataforma.toFixed(1)} / 5
                 </Typography>
               </Stack>
 

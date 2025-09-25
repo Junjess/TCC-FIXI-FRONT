@@ -30,6 +30,7 @@ export type PrestadorDetalhesDTO = {
   descricao: string;
   categorias: { nomeCategoria: string; descricao: string | null }[];
   mediaAvaliacao: number;
+  notaPlataforma: number; 
   avaliacoes: AvaliacaoDTO[];
 };
 

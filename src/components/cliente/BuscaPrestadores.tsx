@@ -85,6 +85,7 @@ export default function BuscaPrestadores({ busca, categorias = [] }: Props) {
           telefone={p.telefone}
           foto={p.foto}
           mediaAvaliacao={p.mediaAvaliacao}
+          notaPlataforma={p.notaPlataforma}
           descricao={p.descricao}
         />
       ))}

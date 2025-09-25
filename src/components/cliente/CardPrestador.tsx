@@ -19,12 +19,13 @@ interface CategoriaDescricaoDTO {
 interface CardPrestadorProps {
   id: number;
   nome: string;
-  categorias: CategoriaDescricaoDTO[]; // ✅ agora lista
+  categorias: CategoriaDescricaoDTO[];
   cidade: string;
   estado: string;
   telefone: string;
   foto?: string;
   mediaAvaliacao?: number;
+  notaPlataforma?: number;
   descricao: string;
 }
 
@@ -37,6 +38,7 @@ export default function CardPrestador({
   telefone,
   foto,
   mediaAvaliacao = 0,
+  notaPlataforma = 0,
   descricao,
 }: CardPrestadorProps) {
   const navigate = useNavigate();
@@ -97,9 +99,22 @@ export default function CardPrestador({
                 size="small"
               />
               <Typography variant="body2" color="text.secondary">
-                {mediaAvaliacao.toFixed(1)} / 5
+                Clientes: {mediaAvaliacao.toFixed(1)} / 5
               </Typography>
             </Stack>
+            {notaPlataforma !== undefined && (
+              <Stack direction="row" alignItems="center" spacing={1} mt={0.5}>
+                <Rating
+                  value={notaPlataforma}
+                  precision={0.5}
+                  readOnly
+                  size="small"
+                />
+                <Typography variant="body2" color="text.secondary">
+                  Plataforma: {notaPlataforma.toFixed(1)} / 5
+                </Typography>
+              </Stack>
+            )}
 
             {/* Botão para visualizar perfil */}
             <Button

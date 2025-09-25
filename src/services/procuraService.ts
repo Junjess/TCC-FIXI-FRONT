@@ -15,6 +15,7 @@ export type PrestadorDTO = {
   descricao: string;
   categorias: CategoriaDescricaoDTO[];
   mediaAvaliacao: number;
+  notaPlataforma: number; 
 };
 
 type ListarPrestadoresParams = {
@@ -58,5 +59,6 @@ export async function listarPrestadores({
         }))
       : [], // garante array mesmo se vier vazio
     mediaAvaliacao: typeof p.mediaAvaliacao === "number" ? p.mediaAvaliacao : 0,
+    notaPlataforma: typeof p.notaPlataforma === "number" ? p.notaPlataforma : 0,
   }));
 }
