@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     Box,
     Container,
@@ -61,6 +61,18 @@ const PageRecomendacoes: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [previewFoto, setPreviewFoto] = useState<string | null>(null);
 
+    const [viaCepLoading, setViaCepLoading] = useState(false);
+    const [viaCepError, setViaCepError] = useState<string | null>(null);
+
+    //  Ref para auto-scroll
+    const endRef = useRef<HTMLDivElement | null>(null);
+    const scrollToBottom = () => {
+        endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    };
+    useEffect(() => {
+        scrollToBottom();
+    }, [mensagens, iaDigitando]);
+
     const confirmarExclusao = (id: number) => {
         setConversaParaExcluir(id);
         setDialogOpen(true);
@@ -75,6 +87,45 @@ const PageRecomendacoes: React.FC = () => {
         setOpenDialog(false);
         setFormData({});
         setFotoFile(null);
+    };
+
+    // Consulta ViaCEP
+    const buscarCidadeEstadoPorCep = async (cep: string) => {
+        const cepNum = cep.replace(/\D/g, "");
+        if (cepNum.length !== 8) {
+            setViaCepError("CEP deve conter 8 dígitos.");
+            return;
+        }
+
+        try {
+            setViaCepLoading(true);
+            setViaCepError(null);
+
+            const resp = await fetch(`https://viacep.com.br/ws/${cepNum}/json/`);
+            const data = await resp.json();
+
+            if (data?.erro) {
+                setViaCepError("CEP não encontrado.");
+                setFormData((prev) => ({
+                    ...prev,
+                    cidade: "",
+                    estado: "",
+                }));
+                return;
+            }
+
+            setFormData((prev) => ({
+                ...prev,
+                cep: cep,
+                cidade: data.localidade || "",
+                estado: data.uf || "",
+            }));
+        } catch (err) {
+            console.error("Erro ao consultar ViaCEP", err);
+            setViaCepError("Erro ao buscar CEP. Tente novamente.");
+        } finally {
+            setViaCepLoading(false);
+        }
     };
 
     const handleConfirmarExclusao = async () => {
@@ -94,7 +145,7 @@ const PageRecomendacoes: React.FC = () => {
         handleCloseDialog();
     };
 
-    // 🔹 Buscar conversas ao iniciar
+    //  Buscar conversas ao iniciar
     useEffect(() => {
         const init = async () => {
             if (!user) return;
@@ -113,7 +164,9 @@ const PageRecomendacoes: React.FC = () => {
         return null;
     }
 
-    // 🔹 Selecionar conversa existente
+
+
+    //  Selecionar conversa existente
     const selecionarConversa = async (id: number) => {
         setConversaSelecionada(id);
         const msgs = await buscarMensagens(id);
@@ -128,7 +181,7 @@ const PageRecomendacoes: React.FC = () => {
 
     // 🔹 Enviar mensagem
     const handleSend = async () => {
-        if (!input.trim()) return;
+        if (!input.trim() || iaDigitando) return;
 
         try {
             let conversaId = conversaSelecionada;
@@ -140,6 +193,9 @@ const PageRecomendacoes: React.FC = () => {
                 setConversaSelecionada(conversaId);
                 setConversas((prev) => [nova, ...prev].slice(0, 10));
             }
+
+            // Ativa indicador de "IA digitando"
+            setIaDigitando(true);
 
             // Envia mensagem do cliente
             const res = await salvarMensagem(conversaId, {
@@ -154,9 +210,20 @@ const PageRecomendacoes: React.FC = () => {
             ]);
         } catch (err) {
             console.error("Erro ao enviar mensagem", err);
+            // Mensagem de erro da IA
+            setMensagens((prev) => [
+                ...prev,
+                {
+                    id: Date.now(),
+                    autor: "IA",
+                    texto: "❌ Erro ao obter resposta no momento. Tente novamente.",
+                    dataHora: new Date().toISOString(),
+                } as MensagemDTO,
+            ]);
+        } finally {
+            setIaDigitando(false);
+            setInput("");
         }
-
-        setInput("");
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -342,8 +409,9 @@ const PageRecomendacoes: React.FC = () => {
                                 </Stack>
                             ))}
 
+                            {/* Indicador de digitação da IA com spinner */}
                             {iaDigitando && (
-                                <Stack direction="row" spacing={1.5} alignItems="flex-end">
+                                <Stack direction="row" spacing={1.5} alignItems="center">
                                     <Avatar sx={{ bgcolor: "grey.400" }}>
                                         <SmartToyIcon />
                                     </Avatar>
@@ -356,13 +424,20 @@ const PageRecomendacoes: React.FC = () => {
                                             borderRadius: 3,
                                             boxShadow: 2,
                                             maxWidth: "70%",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
                                             fontStyle: "italic",
                                         }}
                                     >
-                                        <Typography variant="body2">digitando...</Typography>
+                                        <CircularProgress size={18} />
+                                        <Typography variant="body2">A IA está digitando...</Typography>
                                     </Box>
                                 </Stack>
                             )}
+
+                            {/* âncora para auto-scroll */}
+                            <div ref={endRef} />
                         </Stack>
 
                         <Divider />
@@ -375,15 +450,16 @@ const PageRecomendacoes: React.FC = () => {
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                                disabled={false}
                             />
                             <IconButton
                                 color="primary"
                                 onClick={handleSend}
-                                disabled={!input.trim()}
+                                disabled={!input.trim() || iaDigitando}
                                 sx={{
-                                    bgcolor: "primary.main",
-                                    color: "white",
-                                    "&:hover": { bgcolor: "primary.dark" },
+                                    bgcolor: (!input.trim() || iaDigitando) ? "action.disabledBackground" : "primary.main",
+                                    color: (!input.trim() || iaDigitando) ? "text.disabled" : "white",
+                                    "&:hover": { bgcolor: (!input.trim() || iaDigitando) ? "action.disabledBackground" : "primary.dark" },
                                 }}
                             >
                                 <SendIcon />
@@ -421,9 +497,14 @@ const PageRecomendacoes: React.FC = () => {
                 </DialogTitle>
                 <DialogContent>
                     <Stack spacing={2} mt={1} alignItems="center">
-                        {/* Foto de perfil centralizada */}
+                        {/* Foto de perfil */}
                         <Avatar
-                            src={previewFoto || (user.foto ? `data:image/jpeg;base64,${user.foto}` : undefined)}
+                            src={
+                                previewFoto ||
+                                (user?.foto && user?.fotoTipo
+                                    ? `data:${user.fotoTipo};base64,${user.foto}`
+                                    : undefined)
+                            }
                             alt={formData.nome || "Foto"}
                             sx={{ width: 120, height: 120, mb: 2 }}
                         />
@@ -438,7 +519,7 @@ const PageRecomendacoes: React.FC = () => {
                             />
                         </Button>
 
-                        {/* Campos do formulário */}
+                        {/* Nome */}
                         <TextField
                             label="Nome"
                             name="nome"
@@ -446,6 +527,8 @@ const PageRecomendacoes: React.FC = () => {
                             onChange={handleChange}
                             fullWidth
                         />
+
+                        {/* Email */}
                         <TextField
                             label="E-mail"
                             name="email"
@@ -453,6 +536,8 @@ const PageRecomendacoes: React.FC = () => {
                             onChange={handleChange}
                             fullWidth
                         />
+
+                        {/* Telefone */}
                         <TextField
                             label="Telefone"
                             name="telefone"
@@ -460,20 +545,47 @@ const PageRecomendacoes: React.FC = () => {
                             onChange={handleChange}
                             fullWidth
                         />
+
+                        {/* CEP */}
+                        <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ width: "100%" }}>
+                            <TextField
+                                label="CEP"
+                                name="cep"
+                                value={formData.cep || ""}
+                                onChange={(e) => {
+                                    setFormData({ ...formData, cep: e.target.value });
+                                    if (e.target.value.replace(/\D/g, "").length === 8) {
+                                        buscarCidadeEstadoPorCep(e.target.value);
+                                    } else {
+                                        setViaCepError(null);
+                                    }
+                                }}
+                                fullWidth
+                                error={Boolean(viaCepError)}
+                                helperText={viaCepError || "Digite o CEP para preencher cidade e estado automaticamente"}
+                            />
+                            {viaCepLoading && <CircularProgress size={24} />}
+                        </Stack>
+
+                        {/* Cidade (readOnly) */}
                         <TextField
                             label="Cidade"
                             name="cidade"
                             value={formData.cidade || ""}
-                            onChange={handleChange}
                             fullWidth
+                            InputProps={{ readOnly: true }}
                         />
+
+                        {/* Estado (readOnly) */}
                         <TextField
                             label="Estado"
                             name="estado"
                             value={formData.estado || ""}
-                            onChange={handleChange}
                             fullWidth
+                            InputProps={{ readOnly: true }}
                         />
+
+                        {/* Senha */}
                         <TextField
                             label="Senha"
                             name="senha"

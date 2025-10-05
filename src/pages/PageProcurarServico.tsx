@@ -48,6 +48,9 @@ export default function PageProcurarServico() {
 
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
+  const [viaCepLoading, setViaCepLoading] = useState(false);
+  const [viaCepError, setViaCepError] = useState<string | null>(null);
+  const [previewFoto, setPreviewFoto] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.cep) {
@@ -65,6 +68,48 @@ export default function PageProcurarServico() {
       }
     }
   }, [user?.cep]);
+
+  const buscarCidadeEstadoPorCep = async (cep: string) => {
+    const cepNum = cep.replace(/\D/g, "");
+    if (cepNum.length !== 8) {
+      setViaCepError("CEP deve conter 8 dígitos.");
+      return;
+    }
+
+    try {
+      setViaCepLoading(true);
+      setViaCepError(null);
+
+      const resp = await fetch(`https://viacep.com.br/ws/${cepNum}/json/`);
+      const data = await resp.json();
+
+      if (data?.erro) {
+        setViaCepError("CEP não encontrado.");
+        setFormData((prev) => ({
+          ...prev,
+          cidade: "",
+          estado: "",
+        }));
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        cep: cep,
+        cidade: data.localidade || "",
+        estado: data.uf || "",
+      }));
+    } catch (err) {
+      console.error("Erro ao consultar ViaCEP", err);
+      setViaCepError("Erro ao buscar CEP. Tente novamente.");
+    } finally {
+      setViaCepLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   useEffect(() => {
     if (openFiltros) {
@@ -86,6 +131,14 @@ export default function PageProcurarServico() {
     );
   };
 
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFotoFile(file);
+      setPreviewFoto(URL.createObjectURL(file));
+    }
+  };
+
   const limparFiltros = () => setCategoriasSelecionadas([]);
 
   return (
@@ -94,7 +147,7 @@ export default function PageProcurarServico() {
       <HeaderCliente
         onEditarPerfil={() => {
           if (user) {
-            setFormData(user); 
+            setFormData(user);
           }
           setOpenDialog(true);
         }}
@@ -290,14 +343,13 @@ export default function PageProcurarServico() {
       >
         <DialogContent>
           <Stack spacing={2} mt={1} alignItems="center">
-            {/* Foto de perfil centralizada */}
+            {/* Foto de perfil */}
             <Avatar
               src={
-                fotoFile
-                  ? URL.createObjectURL(fotoFile)
-                  : user?.foto
-                    ? `data:image/jpeg;base64,${user.foto}`
-                    : undefined
+                previewFoto ||
+                (user?.foto && user?.fotoTipo
+                  ? `data:${user.fotoTipo};base64,${user.foto}`
+                  : undefined)
               }
               alt={formData.nome || "Foto"}
               sx={{ width: 120, height: 120, mb: 2 }}
@@ -309,65 +361,83 @@ export default function PageProcurarServico() {
                 type="file"
                 hidden
                 accept="image/*"
-                onChange={(e) =>
-                  setFotoFile(e.target.files ? e.target.files[0] : null)
-                }
+                onChange={handleFotoChange}
               />
             </Button>
 
+            {/* Nome */}
             <TextField
               label="Nome"
               name="nome"
               value={formData.nome || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, nome: e.target.value }))
-              }
+              onChange={handleChange}
               fullWidth
             />
+
+            {/* Email */}
             <TextField
               label="E-mail"
               name="email"
               value={formData.email || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, email: e.target.value }))
-              }
+              onChange={handleChange}
               fullWidth
             />
+
+            {/* Telefone */}
             <TextField
               label="Telefone"
               name="telefone"
               value={formData.telefone || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, telefone: e.target.value }))
-              }
+              onChange={handleChange}
               fullWidth
             />
+
+            {/* CEP */}
+            <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ width: "100%" }}>
+              <TextField
+                label="CEP"
+                name="cep"
+                value={formData.cep || ""}
+                onChange={(e) => {
+                  setFormData({ ...formData, cep: e.target.value });
+                  if (e.target.value.replace(/\D/g, "").length === 8) {
+                    buscarCidadeEstadoPorCep(e.target.value);
+                  } else {
+                    setViaCepError(null);
+                  }
+                }}
+                fullWidth
+                error={Boolean(viaCepError)}
+                helperText={viaCepError || "Digite o CEP para preencher cidade e estado automaticamente"}
+              />
+              {viaCepLoading && <CircularProgress size={24} />}
+            </Stack>
+
+            {/* Cidade (readOnly) */}
             <TextField
               label="Cidade"
               name="cidade"
               value={formData.cidade || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, cidade: e.target.value }))
-              }
               fullWidth
+              InputProps={{ readOnly: true }}
             />
+
+            {/* Estado (readOnly) */}
             <TextField
               label="Estado"
               name="estado"
               value={formData.estado || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, estado: e.target.value }))
-              }
               fullWidth
+              InputProps={{ readOnly: true }}
             />
+
+            {/* Senha */}
             <TextField
               label="Senha"
               name="senha"
               type="password"
               value={formData.senha || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, senha: e.target.value }))
-              }
+              onChange={handleChange}
               fullWidth
             />
           </Stack>

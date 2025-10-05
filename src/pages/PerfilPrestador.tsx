@@ -55,7 +55,7 @@ export default function PerfilPrestador() {
   const { user, setUser } = useUser();
   const theme = useTheme();
 
-  const [categoriaId, setCategoriaId] = useState<string>("");
+  const [categoriaId, setCategoriaId] = useState<number>(0);
   const [descricaoServico, setDescricaoServico] = useState("");
   const [valorSugerido, setValorSugerido] = useState<number | "">("");
 
@@ -147,6 +147,8 @@ export default function PerfilPrestador() {
     }
   };
 
+
+
   if (loading)
     return (
       <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
@@ -167,7 +169,7 @@ export default function PerfilPrestador() {
     >
       {/* HEADER reaproveitado */}
       <HeaderCliente
-        onEditarPerfil={() => navigate("/home/cliente")} // aqui não abre dialog, apenas navega
+        onEditarPerfil={() => navigate("/home/cliente")}
         onLogout={() => {
           setUser(null);
           navigate("/main");
@@ -215,14 +217,14 @@ export default function PerfilPrestador() {
               <Stack direction="row" spacing={1} alignItems="center" mt={1}>
                 <Rating value={prestador.mediaAvaliacao} precision={0.5} readOnly />
                 <Typography variant="body2" color="text.secondary">
-                  Clientes: {prestador.mediaAvaliacao.toFixed(1)} / 5
+                  Avaliação Clientes: {prestador.mediaAvaliacao.toFixed(1)} / 5
                 </Typography>
               </Stack>
 
               <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
                 <Rating value={prestador.notaPlataforma} precision={0.5} readOnly />
                 <Typography variant="body2" color="text.secondary">
-                  Plataforma: {prestador.notaPlataforma.toFixed(1)} / 5
+                  Avaliação Plataforma: {prestador.notaPlataforma.toFixed(1)} / 5
                 </Typography>
               </Stack>
 
@@ -239,7 +241,7 @@ export default function PerfilPrestador() {
             Sobre
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {prestador.descricao}
+            {prestador.sobre}
           </Typography>
 
           <Divider sx={{ my: 3 }} />

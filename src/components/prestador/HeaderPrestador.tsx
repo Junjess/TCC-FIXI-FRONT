@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     AppBar,
     Toolbar,
@@ -8,10 +8,12 @@ import {
     Avatar,
     Menu,
     MenuItem,
+    Badge,
 } from "@mui/material";
 import { Home, BuildCircle, Star, AccountCircle } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
+import { contarSolicitacoesPendentes } from "../../services/agendamentoService";
 
 type HeaderPrestadorProps = {
     onEditarPerfil: () => void;
@@ -20,8 +22,22 @@ type HeaderPrestadorProps = {
 const HeaderPrestador: React.FC<HeaderPrestadorProps> = ({ onEditarPerfil }) => {
     const { user, setUser } = useUser();
     const navigate = useNavigate();
-
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [qtdSolicitacoes, setQtdSolicitacoes] = useState(0);
+
+    useEffect(() => {
+        const carregarSolicitacoes = async () => {
+            if (user?.id) {
+                try {
+                    const qtd = await contarSolicitacoesPendentes(user.id);
+                    setQtdSolicitacoes(qtd);
+                } catch (error) {
+                    console.error("Erro ao buscar solicitações pendentes:", error);
+                }
+            }
+        };
+        carregarSolicitacoes();
+    }, [user]);
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -61,14 +77,24 @@ const HeaderPrestador: React.FC<HeaderPrestadorProps> = ({ onEditarPerfil }) => 
                     >
                         Início
                     </Button>
-                    <Button
-                        color="inherit"
-                        startIcon={<BuildCircle />}
-                        sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
-                        onClick={() => navigate("/solicitacoes")}
+
+                    {/* Botão com Badge de solicitações */}
+                    <Badge
+                        badgeContent={qtdSolicitacoes}
+                        color="error"
+                        overlap="circular"
+                        invisible={qtdSolicitacoes === 0}
                     >
-                        Solicitação de Agendamento
-                    </Button>
+                        <Button
+                            color="inherit"
+                            startIcon={<BuildCircle />}
+                            sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
+                            onClick={() => navigate("/solicitacoes")}
+                        >
+                            Solicitação de Agendamento
+                        </Button>
+                    </Badge>
+
                     <Button
                         color="inherit"
                         startIcon={<Star />}
@@ -87,11 +113,7 @@ const HeaderPrestador: React.FC<HeaderPrestadorProps> = ({ onEditarPerfil }) => 
                     )}
                 </IconButton>
 
-                <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={handleMenuClose}
-                >
+                <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
                     <MenuItem onClick={handleEditarPerfil}>Editar Perfil</MenuItem>
                     <MenuItem onClick={handleLogout}>Logout</MenuItem>
                 </Menu>

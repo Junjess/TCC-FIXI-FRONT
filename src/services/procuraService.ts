@@ -57,7 +57,7 @@ export async function listarPrestadores({
           nomeCategoria: c.nomeCategoria,
           descricao: c.descricao ?? null,
         }))
-      : [], // garante array mesmo se vier vazio
+      : [], 
     mediaAvaliacao: typeof p.mediaAvaliacao === "number" ? p.mediaAvaliacao : 0,
     notaPlataforma: typeof p.notaPlataforma === "number" ? p.notaPlataforma : 0,
   }));

@@ -8,24 +8,20 @@ export type ClienteDTO = {
   cidade?: string;
   estado?: string;
   foto?: string;
+  fotoTipo?: string | null;
   senha?: string; 
   cep: string;        
 };
 
-/**
- * Atualiza dados básicos de um cliente (nome, email, telefone, cidade, estado, senha)
- */
 export async function atualizarCliente(
   id: number,
-  cliente: Partial<Omit<ClienteDTO, "id">> // não permite alterar o id
+  cliente: Partial<Omit<ClienteDTO, "id">> 
 ): Promise<ClienteDTO> {
   const { data } = await api.put<ClienteDTO>(`/clientes/${id}`, cliente);
   return data;
 }
 
-/**
- * Atualiza a foto do cliente enviando arquivo multipart
- */
+
 export async function atualizarFotoCliente(
   id: number,
   file: File
@@ -40,13 +36,14 @@ export async function atualizarFotoCliente(
   return data;
 }
 
-/**
- * Busca apenas a foto do cliente em base64
- */
 export async function buscarFotoCliente(id: number): Promise<string | null> {
   try {
-    const { data } = await api.get<string>(`/clientes/${id}/foto`);
-    return data || null; // retorna null caso não tenha foto
+    const { data } = await api.get<{ base64: string; fotoTipo: string } | null>(
+      `/clientes/${id}/foto`
+    );
+
+    if (!data) return null;
+    return `data:${data.fotoTipo};base64,${data.base64}`;
   } catch (err) {
     console.error("Erro ao buscar foto do cliente", err);
     return null;
@@ -61,7 +58,7 @@ export async function cadastroClienteService(cliente: {
 }) {
   const payload = {
     ...cliente,
-    telefone: limparTelefone(cliente.telefone), // garante só números
+    telefone: limparTelefone(cliente.telefone), 
   };
 
   const { data } = await api.post("/clientes", payload);
@@ -70,5 +67,5 @@ export async function cadastroClienteService(cliente: {
 
 export function limparTelefone(telefone: string): string {
   if (!telefone) return "";
-  return telefone.replace(/\D/g, ""); // remove tudo que não é número
+  return telefone.replace(/\D/g, "");
 }

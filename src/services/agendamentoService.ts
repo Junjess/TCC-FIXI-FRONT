@@ -15,6 +15,7 @@ export type AgendamentoRespostaDTO = {
   nomeCliente: string;
   telefoneCliente: string | null;
   fotoCliente: string | null;
+  fotoTipoCliente?: string | null;
   cidadeCliente: string | null;
   estadoCliente: string | null;
 
@@ -61,7 +62,7 @@ export type Periodo = "MATUTINO" | "VESPERTINO";
 export async function solicitarAgendamento(
   clienteId: number,
   prestadorId: number,
-  nomeCategoria: string,
+  idCategoria: number,
   data: string,
   periodo: Periodo,
   descricaoServico: string,
@@ -73,7 +74,7 @@ export async function solicitarAgendamento(
     {
       params: {
         clienteId,
-        nomeCategoria,
+        idCategoria,
         data,
         periodo,
         descricaoServico,
@@ -146,14 +147,11 @@ export async function listarSolicitacoesPrestador(
   return data;
 }
 
-export async function aceitarAgendamentoPrestador(
-  prestadorId: number,
-  agendamentoId: number
-) {
+export async function aceitarAgendamentoPrestador(prestadorId: number, agendamentoId: number) {
   const { data } = await api.put(
     `/prestadores/${prestadorId}/agendamentos/${agendamentoId}/aceitar`
   );
-  return data;
+  return data.mensagem;
 }
 
 export async function recusarAgendamentoPrestador(
@@ -165,3 +163,13 @@ export async function recusarAgendamentoPrestador(
   );
   return data;
 }
+
+export const contarSolicitacoesPendentes = async (prestadorId: number): Promise<number> => {
+  try {
+    const response = await api.get(`prestadores/agendamentos/pendentes/${prestadorId}`);
+    return response.data.quantidade || 0;
+  } catch (error) {
+    console.error("Erro ao buscar solicitações pendentes:", error);
+    return 0;
+  }
+};

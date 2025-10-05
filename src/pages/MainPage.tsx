@@ -75,6 +75,8 @@ const MainPage: React.FC = () => {
   const [descricao, setDescricao] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [consentimento, setConsentimento] = useState<"aceito" | "naoAceito" | "">("");
+
   const [snackbar, setSnackbar] = useState<SnackbarType>({
     open: false,
     message: "",
@@ -89,11 +91,11 @@ const MainPage: React.FC = () => {
     try {
       if (tipoUsuario === "cliente") {
         const resp = await loginClienteService({ email, senha, tipoUsuario: "CLIENTE" });
-        setUser(resp);
+        setUser(resp.usuario, resp.token);
         navigate("/home/cliente");
       } else {
         const resp = await loginPrestadorService({ email, senha, tipoUsuario: "PRESTADOR" });
-        setUser(resp);
+        setUser(resp.usuario, resp.token);
         navigate("/home/prestador");
       }
 
@@ -243,7 +245,7 @@ const MainPage: React.FC = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.primary.main} 100%)`,
+          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.background.paper} 100%)`,
           p: 3,
         }}
       >
@@ -538,16 +540,59 @@ const MainPage: React.FC = () => {
               )}
             </Box>
 
+            {/* Termo de Consentimento */}
+            <FormControl sx={{ mt: 3, width: "100%" }}>
+              <FormLabel>Termo de Consentimento</FormLabel>
+              <Box
+                sx={{
+                  p: 2,
+                  mb: 2,
+                  borderRadius: 2,
+                  backgroundColor: theme.palette.background.default,
+                  fontSize: "0.9rem",
+                  maxHeight: 150,
+                  overflowY: "auto",
+                }}
+              >
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  Ao prosseguir com o cadastro, você declara estar ciente e de acordo que:
+                </Typography>
+                <ul style={{ marginLeft: "1.2rem", marginBottom: "0.5rem" }}>
+                  <li>Seus dados pessoais serão utilizados exclusivamente para cadastro, autenticação e funcionamento da plataforma FIXI.</li>
+                  <li>Suas informações de contato (telefone, e-mail ou outro informado) poderão ser compartilhadas entre Clientes e Prestadores, para que possam se comunicar diretamente, visto que a FIXI não possui chat interno.</li>
+                  <li>Seus dados serão armazenados em ambiente seguro, com medidas técnicas e organizacionais adequadas para proteção contra acessos não autorizados.</li>
+                  <li>Você poderá solicitar, a qualquer momento, a exclusão, atualização ou correção de seus dados, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 – LGPD).</li>
+                  <li>Clientes e Prestadores concordam que poderão ser avaliados após a realização de serviços, compondo o sistema de reputação da FIXI.</li>
+                  <li>A FIXI atua apenas como intermediadora entre Clientes e Prestadores, não sendo responsável pela execução dos serviços contratados.</li>
+                </ul>
+              </Box>
+
+              <RadioGroup
+                value={consentimento}
+                onChange={(e) => setConsentimento(e.target.value as "aceito" | "naoAceito")}
+              >
+                <FormControlLabel value="aceito" control={<Radio />} label="Li e ACEITO os termos" />
+                <FormControlLabel value="naoAceito" control={<Radio />} label="Li e NÃO ACEITO os termos" />
+              </RadioGroup>
+
+              {consentimento === "naoAceito" && (
+                <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                  ⚠ Você não poderá se cadastrar sem aceitar o termo de consentimento.
+                </Typography>
+              )}
+            </FormControl>
+
             <Box sx={{ mt: 4, textAlign: "center" }}>
               <Button
                 variant="contained"
                 onClick={cadastro}
+                disabled={consentimento !== "aceito"}
                 sx={{
-                  backgroundColor: "#395195",
+                  backgroundColor: consentimento === "aceito" ? "#395195" : "#aaa",
                   color: "#ffffff",
                   fontWeight: "bold",
                   py: 1.5,
-                  "&:hover": { backgroundColor: "#2e4170" },
+                  "&:hover": { backgroundColor: consentimento === "aceito" ? "#2e4170" : "#aaa" },
                 }}
               >
                 Cadastrar
@@ -556,6 +601,7 @@ const MainPage: React.FC = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Snackbar */}
         <Snackbar
           open={snackbar.open}
           autoHideDuration={4000}
@@ -570,7 +616,6 @@ const MainPage: React.FC = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
-
         <TrocarTema />
       </Box>
     </>

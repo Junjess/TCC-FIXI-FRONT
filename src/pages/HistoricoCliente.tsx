@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import {
+  Avatar,
   Box,
   Button,
   Card,
+  CircularProgress,
   Container,
   Dialog,
   DialogActions,
@@ -31,6 +33,9 @@ function HistoricoCliente() {
   const [formData, setFormData] = useState<Partial<ClienteDTO>>({});
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [previewFoto, setPreviewFoto] = useState<string | null>(null);
+  const [viaCepLoading, setViaCepLoading] = useState(false);
+  const [viaCepError, setViaCepError] = useState<string | null>(null);
 
   if (!user) {
     return null;
@@ -38,6 +43,14 @@ function HistoricoCliente() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFotoFile(file);
+      setPreviewFoto(URL.createObjectURL(file));
+    }
   };
 
   const handleOpenDialog = () => {
@@ -81,9 +94,46 @@ function HistoricoCliente() {
     }
   };
 
+  const buscarCidadeEstadoPorCep = async (cep: string) => {
+    const cepNum = cep.replace(/\D/g, "");
+    if (cepNum.length !== 8) {
+      setViaCepError("CEP deve conter 8 dígitos.");
+      return;
+    }
+
+    try {
+      setViaCepLoading(true);
+      setViaCepError(null);
+
+      const resp = await fetch(`https://viacep.com.br/ws/${cepNum}/json/`);
+      const data = await resp.json();
+
+      if (data?.erro) {
+        setViaCepError("CEP não encontrado.");
+        setFormData((prev) => ({
+          ...prev,
+          cidade: "",
+          estado: "",
+        }));
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        cep: cep,
+        cidade: data.localidade || "",
+        estado: data.uf || "",
+      }));
+    } catch (err) {
+      console.error("Erro ao consultar ViaCEP", err);
+      setViaCepError("Erro ao buscar CEP. Tente novamente.");
+    } finally {
+      setViaCepLoading(false);
+    }
+  };
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: theme.palette.background.paper }}>
-      {/* 🔹 Header unificada */}
+      {/* Header unificada */}
       <HeaderCliente
         onEditarPerfil={handleOpenDialog}
         onLogout={() => setUser(null)}
@@ -117,49 +167,15 @@ function HistoricoCliente() {
           Editar Perfil
         </DialogTitle>
         <DialogContent>
-          <Stack spacing={2} mt={1}>
-            <TextField
-              label="Nome"
-              name="nome"
-              value={formData.nome || ""}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="E-mail"
-              name="email"
-              value={formData.email || ""}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Telefone"
-              name="telefone"
-              value={formData.telefone || ""}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Cidade"
-              name="cidade"
-              value={formData.cidade || ""}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Estado"
-              name="estado"
-              value={formData.estado || ""}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Senha"
-              name="senha"
-              type="password"
-              value={formData.senha || ""}
-              onChange={handleChange}
-              fullWidth
+          <Stack spacing={2} mt={1} alignItems="center">
+            {/* Foto de perfil */}
+            <Avatar
+              src={
+                previewFoto ||
+                (user?.foto ? `data:image/jpeg;base64,${user.foto}` : undefined)
+              }
+              alt={formData.nome || "Foto"}
+              sx={{ width: 120, height: 120, mb: 2 }}
             />
 
             <Button variant="outlined" component="label">
@@ -168,11 +184,85 @@ function HistoricoCliente() {
                 type="file"
                 hidden
                 accept="image/*"
-                onChange={(e) =>
-                  setFotoFile(e.target.files ? e.target.files[0] : null)
-                }
+                onChange={handleFotoChange}
               />
             </Button>
+
+            {/* Nome */}
+            <TextField
+              label="Nome"
+              name="nome"
+              value={formData.nome || ""}
+              onChange={handleChange}
+              fullWidth
+            />
+
+            {/* Email */}
+            <TextField
+              label="E-mail"
+              name="email"
+              value={formData.email || ""}
+              onChange={handleChange}
+              fullWidth
+            />
+
+            {/* Telefone */}
+            <TextField
+              label="Telefone"
+              name="telefone"
+              value={formData.telefone || ""}
+              onChange={handleChange}
+              fullWidth
+            />
+
+            {/* CEP */}
+            <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ width: "100%" }}>
+              <TextField
+                label="CEP"
+                name="cep"
+                value={formData.cep || ""}
+                onChange={(e) => {
+                  setFormData({ ...formData, cep: e.target.value });
+                  if (e.target.value.replace(/\D/g, "").length === 8) {
+                    buscarCidadeEstadoPorCep(e.target.value);
+                  } else {
+                    setViaCepError(null);
+                  }
+                }}
+                fullWidth
+                error={Boolean(viaCepError)}
+                helperText={viaCepError || "Digite o CEP para preencher cidade e estado automaticamente"}
+              />
+              {viaCepLoading && <CircularProgress size={24} />}
+            </Stack>
+
+            {/* Cidade (readOnly) */}
+            <TextField
+              label="Cidade"
+              name="cidade"
+              value={formData.cidade || ""}
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
+
+            {/* Estado (readOnly) */}
+            <TextField
+              label="Estado"
+              name="estado"
+              value={formData.estado || ""}
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
+
+            {/* Senha */}
+            <TextField
+              label="Senha"
+              name="senha"
+              type="password"
+              value={formData.senha || ""}
+              onChange={handleChange}
+              fullWidth
+            />
           </Stack>
         </DialogContent>
         <DialogActions>

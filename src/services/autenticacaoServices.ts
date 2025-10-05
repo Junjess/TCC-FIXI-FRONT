@@ -30,19 +30,34 @@ type CadastroPrestador = {
 
 const API_URL = "http://localhost:8080/auth";
 
-// 🔹 Login Cliente
-export const loginClienteService = async (data: Login): Promise<ClienteDTO> => {
-  const response = await axios.post<ClienteDTO>(`${API_URL}/login/cliente`, data);
+export interface LoginResponse<T> {
+  token: string;
+  usuario: T;
+}
+
+// Login Cliente
+export const loginClienteService = async (
+  data: Login
+): Promise<LoginResponse<ClienteDTO>> => {
+  const response = await axios.post<LoginResponse<ClienteDTO>>(
+    `${API_URL}/login/cliente`,
+    data
+  );
   return response.data;
 };
 
-// 🔹 Login Prestador
-export const loginPrestadorService = async (data: Login): Promise<PrestadorProfileDTO> => {
-  const response = await axios.post<PrestadorProfileDTO>(`${API_URL}/login/prestador`, data);
-  return response.data; 
+// Login Prestador
+export const loginPrestadorService = async (
+  data: Login
+): Promise<LoginResponse<PrestadorProfileDTO>> => {
+  const response = await axios.post<LoginResponse<PrestadorProfileDTO>>(
+    `${API_URL}/login/prestador`,
+    data
+  );
+  return response.data;
 };
 
-// 🔹 Cadastro Cliente
+// Cadastro Cliente
 export const cadastroClienteService = async (data: CadastroCliente): Promise<ClienteDTO> => {
   try {
     const response = await axios.post(`${API_URL}/cadastro/cliente`, data);
@@ -53,7 +68,7 @@ export const cadastroClienteService = async (data: CadastroCliente): Promise<Cli
   }
 };
 
-// 🔹 Cadastro Prestador
+//Cadastro Prestador
 export const cadastroPrestadorService = async (data: CadastroPrestador): Promise<PrestadorProfileDTO> => {
   try {
     const response = await axios.post(`${API_URL}/cadastro/prestador`, data);

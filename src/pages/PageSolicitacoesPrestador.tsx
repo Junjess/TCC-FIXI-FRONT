@@ -53,6 +53,8 @@ const PageSolicitacoesPrestador: React.FC = () => {
   const [loadingSolicitacoes, setLoadingSolicitacoes] = useState(true);
   const [loadingSalvar, setLoadingSalvar] = useState(false);
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const [loadingAceitarId, setLoadingAceitarId] = useState<number | null>(null);
+
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -75,7 +77,10 @@ const PageSolicitacoesPrestador: React.FC = () => {
       try {
         setLoadingSolicitacoes(true);
         const data = await listarSolicitacoesPrestador(user.id);
-        setSolicitacoes(data);
+        const filtrados = data.filter(
+          (s: AgendamentoSolicitacao) => s.statusAgendamento !== "EXPIRADO"
+        );
+        setSolicitacoes(filtrados);
       } catch (err) {
         console.error(err);
         setSnackbar({
@@ -128,15 +133,18 @@ const PageSolicitacoesPrestador: React.FC = () => {
 
   const handleAceitar = async (id: number) => {
     if (!user) return;
-    setProcessingId(id);
+
+    setLoadingAceitarId(id);
     const prev = [...solicitacoes];
-    setSolicitacoes((s) => s.filter((x) => x.idAgendamento !== id));
 
     try {
       await aceitarAgendamentoPrestador(user.id, id);
+
+      setSolicitacoes((s) => s.filter((x) => x.idAgendamento !== id));
+
       setSnackbar({
         open: true,
-        message: "Agendamento aceito.",
+        message: "Agendamento aceito com sucesso!",
         severity: "success",
       });
     } catch (err) {
@@ -148,9 +156,10 @@ const PageSolicitacoesPrestador: React.FC = () => {
         severity: "error",
       });
     } finally {
-      setProcessingId(null);
+      setLoadingAceitarId(null); 
     }
   };
+
 
   const handleRecusar = async (id: number) => {
     if (!user) return;
@@ -304,11 +313,22 @@ const PageSolicitacoesPrestador: React.FC = () => {
                           <Button
                             variant="contained"
                             color="primary"
-                            disabled={processingId === s.idAgendamento}
+                            disabled={loadingAceitarId === s.idAgendamento}
                             onClick={() => handleAceitar(s.idAgendamento)}
+                            sx={{ minWidth: 100, position: "relative" }}
                           >
-                            {processingId === s.idAgendamento ? (
-                              <CircularProgress size={18} />
+                            {loadingAceitarId === s.idAgendamento ? (
+                              <CircularProgress
+                                size={22}
+                                color="inherit"
+                                sx={{
+                                  position: "absolute",
+                                  top: "50%",
+                                  left: "50%",
+                                  marginTop: "-11px",
+                                  marginLeft: "-11px",
+                                }}
+                              />
                             ) : (
                               "Aceitar"
                             )}
@@ -316,7 +336,7 @@ const PageSolicitacoesPrestador: React.FC = () => {
                           <Button
                             variant="contained"
                             color="inherit"
-                            sx={{bgcolor: theme.palette.background.default}}
+                            sx={{ bgcolor: theme.palette.background.default }}
                             onClick={() => handleAbrirDetalhes(s)}
                           >
                             Detalhes

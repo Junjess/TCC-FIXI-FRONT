@@ -10,6 +10,7 @@ import {
   Snackbar,
   Alert,
   Avatar,
+  CircularProgress,
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import { PrestadorProfileDTO } from "../../services/prestadorService";
@@ -66,6 +67,10 @@ const DialogEditarPrestador: React.FC<DialogEditarPrestadorProps> = ({
     severity: "success",
   });
 
+  // 🔹 Estados para CEP
+  const [viaCepError, setViaCepError] = useState<string | null>(null);
+  const [viaCepLoading, setViaCepLoading] = useState(false);
+
   useEffect(() => {
     if (user) {
       setFormData({
@@ -75,6 +80,7 @@ const DialogEditarPrestador: React.FC<DialogEditarPrestadorProps> = ({
         cep: user.cep,
         cidade: user.cidade,
         estado: user.estado,
+        sobre: user.sobre,
       });
       setPreviewFoto(user.foto ? `data:image/jpeg;base64,${user.foto}` : null);
 
@@ -85,46 +91,55 @@ const DialogEditarPrestador: React.FC<DialogEditarPrestadorProps> = ({
     }
   }, [user]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // 🔹 Buscar CEP com ViaCEP
   const buscarCep = async (valor: string) => {
     const cepLimpo = valor.replace(/\D/g, "");
     setFormData((prev) => ({ ...prev, cep: valor }));
 
     if (cepLimpo.length < 8) {
       setFormData((prev) => ({ ...prev, cidade: "", estado: "" }));
+      setViaCepError("CEP deve ter 8 dígitos.");
       return;
     }
 
-    if (cepLimpo.length === 8) {
-      try {
-        const resp = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-        const data = await resp.json();
+    try {
+      setViaCepLoading(true);
+      setViaCepError(null);
 
-        if (!data.erro) {
-          setFormData((prev) => ({
-            ...prev,
-            cidade: data.localidade || "",
-            estado: data.uf || "",
-          }));
-        } else {
-          setFormData((prev) => ({ ...prev, cidade: "", estado: "" }));
-          setSnackbar({
-            open: true,
-            message: "CEP não encontrado",
-            severity: "warning",
-          });
-        }
-      } catch {
+      const resp = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+      const data = await resp.json();
+
+      if (!data.erro) {
+        setFormData((prev) => ({
+          ...prev,
+          cidade: data.localidade || "",
+          estado: data.uf || "",
+        }));
+      } else {
         setFormData((prev) => ({ ...prev, cidade: "", estado: "" }));
+        setViaCepError("CEP não encontrado.");
         setSnackbar({
           open: true,
-          message: "Erro ao buscar CEP",
-          severity: "error",
+          message: "CEP não encontrado",
+          severity: "warning",
         });
       }
+    } catch {
+      setFormData((prev) => ({ ...prev, cidade: "", estado: "" }));
+      setViaCepError("Erro ao buscar CEP.");
+      setSnackbar({
+        open: true,
+        message: "Erro ao buscar CEP",
+        severity: "error",
+      });
+    } finally {
+      setViaCepLoading(false);
     }
   };
 
@@ -197,6 +212,7 @@ const DialogEditarPrestador: React.FC<DialogEditarPrestadorProps> = ({
               />
             </Button>
 
+            {/* Nome */}
             <TextField
               label="Nome"
               name="nome"
@@ -204,6 +220,8 @@ const DialogEditarPrestador: React.FC<DialogEditarPrestadorProps> = ({
               onChange={handleChange}
               fullWidth
             />
+
+            {/* Email */}
             <TextField
               label="E-mail"
               name="email"
@@ -211,6 +229,8 @@ const DialogEditarPrestador: React.FC<DialogEditarPrestadorProps> = ({
               onChange={handleChange}
               fullWidth
             />
+
+            {/* Telefone */}
             <TextField
               label="Telefone"
               name="telefone"
@@ -218,27 +238,48 @@ const DialogEditarPrestador: React.FC<DialogEditarPrestadorProps> = ({
               onChange={handleChange}
               fullWidth
             />
-            <TextField
-              label="CEP"
-              name="cep"
-              value={formData.cep || ""}
-              onChange={(e) => buscarCep(e.target.value)}
-              fullWidth
-            />
+
+            {/* CEP */}
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="flex-end"
+              sx={{ width: "100%" }}
+            >
+              <TextField
+                label="CEP"
+                name="cep"
+                value={formData.cep || ""}
+                onChange={(e) => buscarCep(e.target.value)}
+                fullWidth
+                error={Boolean(viaCepError)}
+                helperText={
+                  viaCepError ||
+                  "Digite o CEP para preencher cidade e estado automaticamente"
+                }
+              />
+              {viaCepLoading && <CircularProgress size={24} />}
+            </Stack>
+
+            {/* Cidade (readOnly) */}
             <TextField
               label="Cidade"
               name="cidade"
               value={formData.cidade || ""}
-              onChange={handleChange}
               fullWidth
+              InputProps={{ readOnly: true }}
             />
+
+            {/* Estado (readOnly) */}
             <TextField
               label="Estado"
               name="estado"
               value={formData.estado || ""}
-              onChange={handleChange}
               fullWidth
+              InputProps={{ readOnly: true }}
             />
+
+            {/* Senha */}
             <TextField
               label="Senha"
               name="senha"
@@ -248,7 +289,18 @@ const DialogEditarPrestador: React.FC<DialogEditarPrestadorProps> = ({
               fullWidth
             />
 
-            {/*Autocomplete para categorias */}
+            {/* Sobre */}
+            <TextField
+              label="Sobre"
+              name="sobre"
+              value={formData.sobre || ""}
+              onChange={handleChange}
+              fullWidth
+              multiline
+              rows={4}
+            />
+
+            {/* Categorias */}
             <Autocomplete
               multiple
               options={serviceTypes}
@@ -280,6 +332,7 @@ const DialogEditarPrestador: React.FC<DialogEditarPrestadorProps> = ({
         </DialogActions>
       </Dialog>
 
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

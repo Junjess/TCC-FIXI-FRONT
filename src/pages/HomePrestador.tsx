@@ -92,7 +92,7 @@ const HomePrestador: React.FC = () => {
 
   const prestador = user as PrestadorProfileDTO;
 
-  // 🔹 Extrair categorias únicas dos agendamentos
+  // Extrair categorias únicas dos agendamentos
   const categoriasUnicas = Array.from(
     new Set(agendamentos.map((ag) => ag.categoriaAgendamento).filter(Boolean))
   );
@@ -248,7 +248,11 @@ const HomePrestador: React.FC = () => {
                     <CardContent>
                       <Stack direction="row" spacing={2} alignItems="center">
                         <Avatar
-                          src={ag.fotoCliente ?? undefined}
+                          src={
+                            ag.fotoCliente && ag.fotoTipoCliente
+                              ? `data:${ag.fotoTipoCliente};base64,${ag.fotoCliente}`
+                              : undefined
+                          }
                           alt={ag.nomeCliente}
                           sx={{ width: 64, height: 64, fontSize: 24 }}
                         >
@@ -323,7 +327,7 @@ const HomePrestador: React.FC = () => {
       <DialogEditarPrestador
         open={openDialog}
         onClose={handleCloseDialog}
-        user={prestador}
+        user={prestador as PrestadorProfileDTO}
         loading={loading}
         onSave={async (formData, fotoFile) => {
           try {

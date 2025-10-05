@@ -38,6 +38,9 @@ const HomeCliente: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [previewFoto, setPreviewFoto] = useState<string | null>(null);
 
+  const [viaCepLoading, setViaCepLoading] = useState(false);
+  const [viaCepError, setViaCepError] = useState<string | null>(null);
+
   if (!user) {
     return (
       <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
@@ -51,6 +54,7 @@ const HomeCliente: React.FC = () => {
       nome: user.nome,
       email: user.email,
       telefone: user.telefone,
+      cep: user.cep,
       cidade: user.cidade,
       estado: user.estado,
     });
@@ -66,6 +70,45 @@ const HomeCliente: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // 🔹 Consulta ViaCEP
+  const buscarCidadeEstadoPorCep = async (cep: string) => {
+    const cepNum = cep.replace(/\D/g, "");
+    if (cepNum.length !== 8) {
+      setViaCepError("CEP deve conter 8 dígitos.");
+      return;
+    }
+
+    try {
+      setViaCepLoading(true);
+      setViaCepError(null);
+
+      const resp = await fetch(`https://viacep.com.br/ws/${cepNum}/json/`);
+      const data = await resp.json();
+
+      if (data?.erro) {
+        setViaCepError("CEP não encontrado.");
+        setFormData((prev) => ({
+          ...prev,
+          cidade: "",
+          estado: "",
+        }));
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        cep: cep,
+        cidade: data.localidade || "",
+        estado: data.uf || "",
+      }));
+    } catch (err) {
+      console.error("Erro ao consultar ViaCEP", err);
+      setViaCepError("Erro ao buscar CEP. Tente novamente.");
+    } finally {
+      setViaCepLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -98,7 +141,6 @@ const HomeCliente: React.FC = () => {
       setPreviewFoto(URL.createObjectURL(file));
     }
   };
-
 
   return (
     <Box
@@ -152,9 +194,14 @@ const HomeCliente: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1} alignItems="center">
-            {/* Foto de perfil centralizada */}
+            {/* Foto de perfil */}
             <Avatar
-              src={previewFoto || (user?.foto ? `data:image/jpeg;base64,${user.foto}` : undefined)}
+              src={
+                previewFoto ||
+                (user?.foto && user?.fotoTipo
+                  ? `data:${user.fotoTipo};base64,${user.foto}`
+                  : undefined)
+              }
               alt={formData.nome || "Foto"}
               sx={{ width: 120, height: 120, mb: 2 }}
             />
@@ -169,7 +216,7 @@ const HomeCliente: React.FC = () => {
               />
             </Button>
 
-            {/* Campos do formulário */}
+            {/* Nome */}
             <TextField
               label="Nome"
               name="nome"
@@ -177,6 +224,8 @@ const HomeCliente: React.FC = () => {
               onChange={handleChange}
               fullWidth
             />
+
+            {/* Email */}
             <TextField
               label="E-mail"
               name="email"
@@ -184,6 +233,8 @@ const HomeCliente: React.FC = () => {
               onChange={handleChange}
               fullWidth
             />
+
+            {/* Telefone */}
             <TextField
               label="Telefone"
               name="telefone"
@@ -191,20 +242,47 @@ const HomeCliente: React.FC = () => {
               onChange={handleChange}
               fullWidth
             />
+
+            {/* CEP */}
+            <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ width: "100%" }}>
+              <TextField
+                label="CEP"
+                name="cep"
+                value={formData.cep || ""}
+                onChange={(e) => {
+                  setFormData({ ...formData, cep: e.target.value });
+                  if (e.target.value.replace(/\D/g, "").length === 8) {
+                    buscarCidadeEstadoPorCep(e.target.value);
+                  } else {
+                    setViaCepError(null);
+                  }
+                }}
+                fullWidth
+                error={Boolean(viaCepError)}
+                helperText={viaCepError || "Digite o CEP para preencher cidade e estado automaticamente"}
+              />
+              {viaCepLoading && <CircularProgress size={24} />}
+            </Stack>
+
+            {/* Cidade (readOnly) */}
             <TextField
               label="Cidade"
               name="cidade"
               value={formData.cidade || ""}
-              onChange={handleChange}
               fullWidth
+              InputProps={{ readOnly: true }}
             />
+
+            {/* Estado (readOnly) */}
             <TextField
               label="Estado"
               name="estado"
               value={formData.estado || ""}
-              onChange={handleChange}
               fullWidth
+              InputProps={{ readOnly: true }}
             />
+
+            {/* Senha */}
             <TextField
               label="Senha"
               name="senha"
@@ -227,7 +305,6 @@ const HomeCliente: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
 
       <TrocarTema />
     </Box>

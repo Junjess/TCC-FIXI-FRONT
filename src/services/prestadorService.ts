@@ -9,9 +9,11 @@ export type PrestadorProfileDTO = {
   estado: string;
   cep: string;
   foto?: string;
+  fotoTipo?: string | null;
   mediaAvaliacao: number;
   categorias: { id: string; descricao: string }[];
   senha?: string;
+  sobre?: string;
 };
 
 export type AvaliacaoDTO = {
@@ -27,26 +29,26 @@ export type PrestadorDetalhesDTO = {
   foto: string;
   cidade: string;
   estado: string;
-  descricao: string;
+  sobre: string;
   categorias: { nomeCategoria: string; descricao: string | null }[];
   mediaAvaliacao: number;
   notaPlataforma: number; 
   avaliacoes: AvaliacaoDTO[];
 };
 
-// 🔹 Buscar perfil completo de prestador
+// Buscar perfil completo de prestador
 export async function buscarPrestadorPorId(id: number): Promise<PrestadorDetalhesDTO> {
   const { data } = await api.get<PrestadorDetalhesDTO>(`/prestadores/perfil/${id}`);
   return data;
 }
 
-// 🔹 Utilitário: limpar telefone
+// Utilitário: limpar telefone
 export function limparTelefone(telefone: string): string {
   if (!telefone) return "";
-  return telefone.replace(/\D/g, ""); // remove tudo que não é número
+  return telefone.replace(/\D/g, ""); 
 }
 
-// 🔹 Cadastro de prestador
+// Cadastro de prestador
 export async function cadastroPrestadorService(prestador: {
   nome: string;
   email: string;
@@ -64,7 +66,7 @@ export async function cadastroPrestadorService(prestador: {
   return data;
 }
 
-// 🔹 Atualizar dados do prestador
+// Atualizar dados do prestador
 export async function atualizarPrestador(
   id: number,
   prestador: Partial<Omit<PrestadorProfileDTO, "id">>
@@ -73,7 +75,7 @@ export async function atualizarPrestador(
   return data;
 }
 
-// 🔹 Atualizar foto do prestador
+// Atualizar foto do prestador
 export async function atualizarFotoPrestador(
   id: number,
   file: File

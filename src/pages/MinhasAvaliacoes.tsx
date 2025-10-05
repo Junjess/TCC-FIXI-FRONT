@@ -30,6 +30,7 @@ import html2canvas from "html2canvas";
 import { buscarAvaliacoesPlataforma, buscarDesempenhoGeral } from "../services/avaliacaoService";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { createRoot } from "react-dom/client";
+import { useTheme } from "@mui/material/styles";
 
 function MinhasAvaliacoes() {
   const { user, setUser } = useUser();
@@ -38,6 +39,14 @@ function MinhasAvaliacoes() {
 
   const [openDialog, setOpenDialog] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [notaPlataforma, setNotaPlataforma] = useState<number | null>(null);
+  const theme = useTheme();
+
+  interface LinhaResumo {
+    periodo: string;
+    notaIA: string;
+    mediaClientes: string;
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -45,6 +54,14 @@ function MinhasAvaliacoes() {
       try {
         const resp = await buscarPrestadorPorId(user.id);
         setPrestador(resp);
+
+        // Busca nota da plataforma
+        const plataforma = await buscarAvaliacoesPlataforma(user.id);
+        // supondo que o último registro é o mais recente
+        if (plataforma && plataforma.length > 0) {
+          const ultima = plataforma[plataforma.length - 1];
+          setNotaPlataforma(ultima.notaFinal);
+        }
       } catch (err) {
         console.error("Erro ao carregar avaliações:", err);
       } finally {
@@ -82,37 +99,40 @@ function MinhasAvaliacoes() {
     }
   };
 
-  const handleDownloadAvaliacoes = async () => {
-    try {
-      if (!user?.id) {
-        alert("Usuário não encontrado");
-        return;
-      }
-
-      const response = await fetch(`http://localhost:8080/avaliacoes/${user.id}/download`, {
-        method: "GET"
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao baixar avaliações");
-      }
-      const blob = await response.blob();
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "avaliacoes-clientes.pdf";
-      document.body.appendChild(a);
-      a.click();
-
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao baixar avaliações");
+ const handleDownloadAvaliacoes = async () => {
+  try {
+    if (!user?.id) {
+      alert("Usuário não encontrado");
+      return;
     }
-  };
 
+    const response = await fetch(`http://localhost:8080/avaliacoes/${user.id}/download`, {
+      method: "GET",
+    });
+
+    if (!response.ok) {
+      throw new Error("Erro ao baixar avaliações");
+    }
+
+    // já é PDF vindo do back
+    const blob = await response.blob();
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "avaliacoes-clientes.pdf";
+    document.body.appendChild(a);
+    a.click();
+
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao baixar avaliações");
+  }
+};
+
+  // Relatório 2 - Nota da Plataforma
   const handleDownloadNotaPlataforma = async () => {
     try {
       if (!user?.id) {
@@ -130,7 +150,6 @@ function MinhasAvaliacoes() {
       container.style.top = "-9999px";
       document.body.appendChild(container);
 
-      // monta o gráfico
       const grafico = (
         <ResponsiveContainer width={800} height={400}>
           <LineChart data={dados}>
@@ -151,15 +170,40 @@ function MinhasAvaliacoes() {
       const root = createRoot(container);
       root.render(grafico);
 
-      // 🔑 espera o React renderizar
       await new Promise((resolve) => setTimeout(resolve, 1200));
 
       const canvas = await html2canvas(container);
       const imgData = canvas.toDataURL("image/png");
 
       const pdf = new jsPDF("landscape");
+      const hoje = new Date().toLocaleDateString("pt-BR");
+
+      pdf.setFontSize(18);
       pdf.text("Relatório - Nota da Plataforma", 15, 15);
-      pdf.addImage(imgData, "PNG", 15, 30, 260, 120);
+
+      pdf.setFontSize(12);
+      pdf.text(`Gerado em: ${hoje}`, 15, 25);
+      pdf.text(`Prestador: ${user?.nome}`, 15, 32);
+
+      pdf.setFontSize(11);
+      pdf.text(
+        "Este relatório mostra a evolução da sua nota calculada pela plataforma.\n" +
+        "O gráfico apresenta indicadores como tempo ativo, taxa de aceitação, taxa de cancelamento,\n" +
+        "avaliação da IA e a nota final consolidada.",
+        15,
+        45,
+        { maxWidth: 260 }
+      );
+
+      pdf.addImage(imgData, "PNG", 15, 70, 260, 120);
+
+      pdf.text(
+        "Conclusão: A Nota Final representa um índice consolidado do seu desempenho geral\nna plataforma, considerando eficiência, confiabilidade e satisfação.",
+        15,
+        200,
+        { maxWidth: 260 }
+      );
+
       pdf.save("nota-plataforma.pdf");
 
       root.unmount();
@@ -170,119 +214,139 @@ function MinhasAvaliacoes() {
     }
   };
 
-const handleDownloadDesempenhoGeral = async () => {
-  try {
-    if (!user?.id) {
-      alert("Usuário não encontrado");
-      return;
-    }
+  // Relatório 3 - Desempenho Geral
+  const handleDownloadDesempenhoGeral = async () => {
+    try {
+      if (!user?.id) {
+        alert("Usuário não encontrado");
+        return;
+      }
 
-    // Busca dados no backend
-    const dados = await buscarDesempenhoGeral(user.id);
+      const dados = await buscarDesempenhoGeral(user.id);
 
-    // IA (já vem pronto do back)
-    const dadosIA = dados.avaliacoesPlataforma;
+      const dadosIA = dados.avaliacoesPlataforma;
 
-    // Clientes → calcular média mensal
-    const clientesPorMes: Record<string, number[]> = {};
-    dados.avaliacoesClientes.forEach((av: any) => {
-      const mes = av.data?.substring(0, 7) || "2025-09"; // yyyy-MM
-      if (!clientesPorMes[mes]) clientesPorMes[mes] = [];
-      clientesPorMes[mes].push(av.nota);
-    });
+      const clientesPorMes: Record<string, number[]> = {};
+      dados.avaliacoesClientes.forEach((av: { data: string; nota: number }) => {
+        const mes = av.data?.substring(0, 7) || "2025-09";
+        if (!clientesPorMes[mes]) clientesPorMes[mes] = [];
+        clientesPorMes[mes].push(av.nota);
+      });
 
-    const dadosClientes = Object.entries(clientesPorMes).map(([mes, notas]) => ({
-      periodoReferencia: mes + "-01",
-      mediaClientes: notas.reduce((a, b) => a + b, 0) / notas.length,
-    }));
+      const dadosClientes = Object.entries(clientesPorMes).map(([mes, notas]) => ({
+        periodoReferencia: mes + "-01",
+        mediaClientes: notas.reduce((a, b) => a + b, 0) / notas.length,
+      }));
 
-    // Monta tabela resumo
-    const tabelaResumo = dadosIA.map((ia: any) => {
-      const clientes = dadosClientes.find(
-        (c) => c.periodoReferencia === ia.periodoReferencia
+      const tabelaResumo: LinhaResumo[] = dadosIA.map((ia: any) => {
+        const clientes = dadosClientes.find((c) => c.periodoReferencia === ia.periodoReferencia);
+        return {
+          periodo: ia.periodoReferencia,
+          notaIA: ia.notaFinal.toFixed(2),
+          mediaClientes: clientes ? clientes.mediaClientes.toFixed(2) : "-",
+        };
+      });
+
+      const container = document.createElement("div");
+      container.style.width = "800px";
+      container.style.height = "400px";
+      container.style.position = "absolute";
+      container.style.top = "-9999px";
+      document.body.appendChild(container);
+
+      const grafico = (
+        <ResponsiveContainer width={800} height={400}>
+          <LineChart>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="periodoReferencia" />
+            <YAxis domain={[0, 5]} />
+            <Tooltip />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="notaFinal"
+              stroke="#000"
+              strokeWidth={3}
+              name="Nota Final (IA)"
+              data={dadosIA}
+            />
+            <Line
+              type="monotone"
+              dataKey="mediaClientes"
+              stroke="#82ca9d"
+              strokeWidth={3}
+              name="Média dos Clientes"
+              data={dadosClientes}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       );
-      return {
-        periodo: ia.periodoReferencia,
-        notaIA: ia.notaFinal.toFixed(2),
-        mediaClientes: clientes ? clientes.mediaClientes.toFixed(2) : "-",
-      };
-    });
 
-    // Cria container oculto para o gráfico
-    const container = document.createElement("div");
-    container.style.width = "800px";
-    container.style.height = "400px";
-    container.style.position = "absolute";
-    container.style.top = "-9999px";
-    document.body.appendChild(container);
+      const root = createRoot(container);
+      root.render(grafico);
 
-    const grafico = (
-      <ResponsiveContainer width={800} height={400}>
-        <LineChart>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="periodoReferencia" />
-          <YAxis domain={[0, 5]} />
-          <Tooltip />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="notaFinal"
-            stroke="#000"
-            strokeWidth={3}
-            name="Nota Final (IA)"
-            data={dadosIA}
-          />
-          <Line
-            type="monotone"
-            dataKey="mediaClientes"
-            stroke="#82ca9d"
-            strokeWidth={3}
-            name="Média dos Clientes"
-            data={dadosClientes}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    );
+      await new Promise((resolve) => setTimeout(resolve, 1200));
 
-    const root = createRoot(container);
-    root.render(grafico);
+      const canvas = await html2canvas(container);
+      const imgData = canvas.toDataURL("image/png");
 
-    // espera renderizar
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+      const pdf = new jsPDF("landscape");
+      const hoje = new Date().toLocaleDateString("pt-BR");
 
-    // captura gráfico como imagem
-    const canvas = await html2canvas(container);
-    const imgData = canvas.toDataURL("image/png");
+      pdf.setFontSize(18);
+      pdf.text("Relatório - Desempenho Geral", 15, 15);
 
-    // cria PDF
-    const pdf = new jsPDF("landscape");
-    pdf.text("Relatório - Desempenho Geral", 15, 15);
-    pdf.addImage(imgData, "PNG", 15, 30, 260, 120);
+      pdf.setFontSize(12);
+      pdf.text(`Gerado em: ${hoje}`, 15, 25);
+      pdf.text(`Prestador: ${user?.nome}`, 15, 32);
 
-    // adiciona tabela com autoTable
-    autoTable(pdf, {
-      startY: 160,
-      head: [["Período", "Nota Final (IA)", "Média Clientes"]],
-      body: tabelaResumo.map(
-        (linha: { periodo: string; notaIA: string; mediaClientes: string }) => [
+      pdf.setFontSize(11);
+      pdf.text(
+        "Este relatório compara a Nota Final atribuída pela IA com a média das notas recebidas\n" +
+        "dos clientes ao longo do tempo. O objetivo é mostrar convergências ou diferenças\n" +
+        "entre a avaliação automática da plataforma e a percepção real dos clientes.",
+        15,
+        45,
+        { maxWidth: 260 }
+      );
+
+      pdf.addImage(imgData, "PNG", 15, 70, 260, 120);
+
+      autoTable(pdf, {
+        startY: 200,
+        head: [["Período", "Nota Final (IA)", "Média Clientes"]],
+        body: tabelaResumo.map((linha: LinhaResumo) => [
           linha.periodo,
           linha.notaIA,
           linha.mediaClientes,
-        ]
-      ),
-    });
+        ]),
+      });
 
-    // 🔹 salva PDF
-    pdf.save("desempenho-geral.pdf");
+      const yAfterTable = (pdf as any).lastAutoTable.finalY + 10;
+      pdf.text(
+        "Legenda: Nota Final (IA) → avaliação automática da plataforma.\n" +
+        "Média Clientes → percepção dos clientes reais em cada período.",
+        15,
+        yAfterTable
+      );
 
-    // 🔹 limpa DOM
-    root.unmount();
-    container.remove();
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao gerar PDF do Desempenho Geral");
-  }
-};
+      const ultimaNotaIA = tabelaResumo[tabelaResumo.length - 1]?.notaIA;
+      pdf.text(
+        `Conclusão: Sua última nota da IA foi ${ultimaNotaIA}, ` +
+        `${parseFloat(ultimaNotaIA) >= 4 ? "indicando bom desempenho" : "mostrando que há pontos a melhorar"}.`,
+        15,
+        yAfterTable + 20
+      );
+
+      pdf.save("desempenho-geral.pdf");
+
+      root.unmount();
+      container.remove();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao gerar PDF do Desempenho Geral");
+    }
+  };
 
 
   if (loading) {
@@ -318,28 +382,54 @@ const handleDownloadDesempenhoGeral = async () => {
                   p: 3,
                   mb: 4,
                   borderRadius: 4,
-                  background: "linear-gradient(135deg, #f5f7fa, #ffffff)",
+                  bgcolor: "background.paper",
                 }}
               >
-                <Box textAlign="center">
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    Média Geral
-                  </Typography>
-                  <Rating
-                    value={prestador?.mediaAvaliacao || 0}
-                    precision={0.5}
-                    readOnly
-                    size="large"
-                  />
-                  <Typography variant="body1" sx={{ mt: 1 }}>
-                    {prestador?.mediaAvaliacao
-                      ? `${prestador.mediaAvaliacao.toFixed(1)} estrelas`
-                      : "Sem avaliações ainda"}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {prestador?.avaliacoes?.length || 0} avaliação(ões)
-                  </Typography>
-                </Box>
+                <Stack
+                  direction="row"
+                  justifyContent="space-around"
+                  alignItems="center"
+                  spacing={4}
+                >
+                  {/* Bloco Média Geral */}
+                  <Box textAlign="center" flex={1}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
+                      Média Geral (Clientes)
+                    </Typography>
+                    <Rating
+                      value={prestador?.mediaAvaliacao || 0}
+                      precision={0.5}
+                      readOnly
+                      size="large"
+                    />
+                    <Typography variant="body1" sx={{ mt: 1 }}>
+                      {prestador?.mediaAvaliacao
+                        ? `${prestador.mediaAvaliacao.toFixed(1)} estrelas`
+                        : "Sem avaliações ainda"}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {prestador?.avaliacoes?.length || 0} avaliação(ões)
+                    </Typography>
+                  </Box>
+
+                  {/* Bloco Nota da Plataforma */}
+                  <Box textAlign="center" flex={1}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
+                      Nota da Plataforma
+                    </Typography>
+                    <Rating
+                      value={notaPlataforma || 0}
+                      precision={0.5}
+                      readOnly
+                      size="large"
+                    />
+                    <Typography variant="body1" sx={{ mt: 1 }}>
+                      {notaPlataforma
+                        ? `${notaPlataforma.toFixed(1)} estrelas`
+                        : "Sem nota disponível"}
+                    </Typography>
+                  </Box>
+                </Stack>
               </Paper>
             </Box>
 
@@ -358,6 +448,7 @@ const handleDownloadDesempenhoGeral = async () => {
                     key={index}
                     sx={{
                       borderRadius: 3,
+                      backgroundColor: "background.paper",
                       boxShadow: 3,
                       transition: "0.3s",
                       "&:hover": { boxShadow: 6 },
@@ -406,7 +497,7 @@ const handleDownloadDesempenhoGeral = async () => {
                 p: 3,
                 borderRadius: 4,
                 boxShadow: 4,
-                background: "linear-gradient(135deg, #f5f7fa, #ffffff)",
+                backgroundColor: "background.paper",
                 flex: 1,
                 display: "flex",
                 flexDirection: "column",

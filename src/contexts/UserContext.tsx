@@ -1,32 +1,62 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { ClienteDTO, buscarFotoCliente } from "../services/clienteService";
+import { PrestadorProfileDTO } from "../services/prestadorService";
 
-type User = ClienteDTO | null;
+export type User = ClienteDTO | PrestadorProfileDTO | null;
 
 type UserContextType = {
   user: User;
-  setUser: (user: User) => void;
+  setUser: (user: User, token?: string) => void;
   logout: () => void;
   carregarFoto: (id: number) => Promise<void>;
+  token: string | null;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User>(null);
+  const [user, setUserState] = useState<User>(null);
+  const [token, setToken] = useState<string | null>(null);
 
-  const logout = () => {
-    setUser(null);
+  // Carregar do localStorage quando o app iniciar
+  useEffect(() => {
+    const storedUser = localStorage.getItem("usuario");
+    const storedToken = localStorage.getItem("token");
+
+    if (storedUser) setUserState(JSON.parse(storedUser));
+    if (storedToken) setToken(storedToken);
+  }, []);
+
+  const setUser = (user: User, token?: string) => {
+    setUserState(user);
+
+    if (user) {
+      localStorage.setItem("usuario", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("usuario");
+    }
+
+    if (token) {
+      setToken(token);
+      localStorage.setItem("token", token);
+    }
   };
 
-  /**
-   * Atualiza a foto no contexto buscando do back
-   */
+  // Logout
+  const logout = () => {
+    setUserState(null);
+    setToken(null);
+    localStorage.removeItem("usuario");
+    localStorage.removeItem("token");
+  };
+
+  // Atualizar foto (só faz sentido para cliente)
   const carregarFoto = async (id: number) => {
     try {
       const foto = await buscarFotoCliente(id);
       if (foto) {
-        setUser((prev) => (prev ? { ...prev, foto } : prev));
+        setUserState((prev) => (prev ? { ...prev, foto } : prev));
+        localStorage.setItem("usuario", JSON.stringify({ ...user, foto }));
       }
     } catch (err) {
       console.error("Erro ao carregar foto no contexto", err);
@@ -34,7 +64,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <UserContext.Provider value={{ user, setUser, logout, carregarFoto }}>
+    <UserContext.Provider value={{ user, setUser, logout, carregarFoto, token }}>
       {children}
     </UserContext.Provider>
   );
