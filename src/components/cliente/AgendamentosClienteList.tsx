@@ -26,7 +26,6 @@ import {
 import { salvarAvaliacao } from "../../services/avaliacaoService";
 import { useUser } from "../../contexts/UserContext";
 import dayjs from "dayjs";
-import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 
 type Props = {
   clienteId: number;
@@ -36,8 +35,6 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
   const [itens, setItens] = useState<AgendamentoRespostaDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-
-
   const [avaliarOpen, setAvaliarOpen] = useState(false);
   const [avaliarNota, setAvaliarNota] = useState<number | null>(0);
   const [avaliarDescricao, setAvaliarDescricao] = useState("");
@@ -67,13 +64,13 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
 
           const filtrados = res.filter((a) => {
             const dataAg = dayjs(a.data).startOf("day");
-
-            const aindaValido = dataAg.valueOf() >= hoje.valueOf();
+            const hoje = dayjs().startOf("day");
 
             const naoCancelado = a.statusAgendamento !== "CANCELADO";
-            const naoAvaliado = !a.avaliado;
+            const naoRecusado = a.statusAgendamento !== "NEGADO";
+            const aindaValido = dataAg.isSame(hoje) || dataAg.isAfter(hoje);
 
-            return aindaValido && naoCancelado && naoAvaliado;
+            return naoCancelado && naoRecusado && aindaValido;
           });
 
           setItens(filtrados);
@@ -92,7 +89,6 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
       isMounted = false;
     };
   }, [clienteId]);
-
 
   async function handleCancelar(idAgendamento: number) {
     if (!user) return;
@@ -121,14 +117,6 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
         return next;
       });
     }
-  }
-
-
-  function abrirAvaliar(idAgendamento: number) {
-    setAvaliarAgendamentoId(idAgendamento);
-    setAvaliarNota(0);
-    setAvaliarDescricao("");
-    setAvaliarOpen(true);
   }
 
   async function salvar() {
@@ -268,18 +256,6 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
                           Cancelar
                         </Button>
                       </>
-                    )}
-
-                    {ag.statusAgendamento === "ACEITO" && dataPassada && !ag.avaliado && (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        size="small"
-                        sx={{ mt: 2 }}
-                        onClick={() => abrirAvaliar(ag.idAgendamento)}
-                      >
-                        Avaliar Serviço
-                      </Button>
                     )}
                   </Box>
                 </Stack>

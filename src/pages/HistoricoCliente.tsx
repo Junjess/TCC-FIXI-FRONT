@@ -24,10 +24,13 @@ import {
 } from "../services/clienteService";
 import TrocarTema from "../components/TrocarTema";
 import HeaderCliente from "../components/cliente/HeaderCliente";
+import { useNavigate } from "react-router-dom";
 
 function HistoricoCliente() {
   const theme = useTheme();
   const { user, setUser } = useUser();
+  const navigate = useNavigate();
+
 
   const [openDialog, setOpenDialog] = useState(false);
   const [formData, setFormData] = useState<Partial<ClienteDTO>>({});
@@ -73,13 +76,13 @@ function HistoricoCliente() {
     try {
       setLoading(true);
 
-      // 🔹 Atualiza dados básicos (apenas campos alterados)
+      // Atualiza dados básicos (apenas campos alterados)
       if (Object.keys(formData).length > 0) {
         const updated = await atualizarCliente(user.id, formData);
         setUser(updated);
       }
 
-      // 🔹 Atualiza foto se foi escolhida
+      // Atualiza foto se foi escolhida
       if (fotoFile) {
         const updated = await atualizarFotoCliente(user.id, fotoFile);
         setUser(updated);
@@ -131,12 +134,16 @@ function HistoricoCliente() {
       setViaCepLoading(false);
     }
   };
+
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: theme.palette.background.paper }}>
       {/* Header unificada */}
       <HeaderCliente
         onEditarPerfil={handleOpenDialog}
-        onLogout={() => setUser(null)}
+        onLogout={() => {
+          setUser(null);
+          navigate("/main");
+        }}
       />
 
       <Container sx={{ mt: 5 }}>
@@ -155,7 +162,7 @@ function HistoricoCliente() {
         </Card>
       </Container>
 
-      {/* 🔹 Dialog de editar perfil */}
+      {/*Dialog de editar perfil */}
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}

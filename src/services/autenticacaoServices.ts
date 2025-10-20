@@ -35,7 +35,6 @@ export interface LoginResponse<T> {
   usuario: T;
 }
 
-// Login Cliente
 export const loginClienteService = async (
   data: Login
 ): Promise<LoginResponse<ClienteDTO>> => {
@@ -46,7 +45,6 @@ export const loginClienteService = async (
   return response.data;
 };
 
-// Login Prestador
 export const loginPrestadorService = async (
   data: Login
 ): Promise<LoginResponse<PrestadorProfileDTO>> => {
@@ -57,7 +55,6 @@ export const loginPrestadorService = async (
   return response.data;
 };
 
-// Cadastro Cliente
 export const cadastroClienteService = async (data: CadastroCliente): Promise<ClienteDTO> => {
   try {
     const response = await axios.post(`${API_URL}/cadastro/cliente`, data);
@@ -68,7 +65,6 @@ export const cadastroClienteService = async (data: CadastroCliente): Promise<Cli
   }
 };
 
-//Cadastro Prestador
 export const cadastroPrestadorService = async (data: CadastroPrestador): Promise<PrestadorProfileDTO> => {
   try {
     const response = await axios.post(`${API_URL}/cadastro/prestador`, data);

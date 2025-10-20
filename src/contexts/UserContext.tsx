@@ -18,7 +18,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUserState] = useState<User>(null);
   const [token, setToken] = useState<string | null>(null);
 
-  // Carregar do localStorage quando o app iniciar
   useEffect(() => {
     const storedUser = localStorage.getItem("usuario");
     const storedToken = localStorage.getItem("token");
@@ -42,7 +41,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Logout
   const logout = () => {
     setUserState(null);
     setToken(null);
@@ -50,7 +48,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("token");
   };
 
-  // Atualizar foto (só faz sentido para cliente)
   const carregarFoto = async (id: number) => {
     try {
       const foto = await buscarFotoCliente(id);

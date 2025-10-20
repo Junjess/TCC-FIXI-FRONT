@@ -31,12 +31,15 @@ import {
 } from "../services/clienteService";
 import HeaderCliente from "../components/cliente/HeaderCliente";
 import TrocarTema from "../components/TrocarTema";
+import { useNavigate } from "react-router-dom";
 
 export default function PageProcurarServico() {
   const theme = useTheme();
   const [busca, setBusca] = useState("");
 
   const { user, setUser } = useUser();
+  const navigate = useNavigate();
+
   const [openFiltros, setOpenFiltros] = useState(false);
   const [categorias, setCategorias] = useState<CategoriaDTO[]>([]);
   const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<number[]>([]);
@@ -151,7 +154,10 @@ export default function PageProcurarServico() {
           }
           setOpenDialog(true);
         }}
-        onLogout={() => setUser(null)}
+        onLogout={() => {
+          setUser(null);
+          navigate("/main");
+        }}
       />
 
 

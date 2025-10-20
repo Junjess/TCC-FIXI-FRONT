@@ -72,7 +72,6 @@ const HomeCliente: React.FC = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 🔹 Consulta ViaCEP
   const buscarCidadeEstadoPorCep = async (cep: string) => {
     const cepNum = cep.replace(/\D/g, "");
     if (cepNum.length !== 8) {

@@ -54,6 +54,7 @@ const PageSolicitacoesPrestador: React.FC = () => {
   const [loadingSalvar, setLoadingSalvar] = useState(false);
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [loadingAceitarId, setLoadingAceitarId] = useState<number | null>(null);
+  const [loadingRecusarId, setLoadingRecusarId] = useState<number | null>(null);
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -156,19 +157,19 @@ const PageSolicitacoesPrestador: React.FC = () => {
         severity: "error",
       });
     } finally {
-      setLoadingAceitarId(null); 
+      setLoadingAceitarId(null);
     }
   };
-
 
   const handleRecusar = async (id: number) => {
     if (!user) return;
     setProcessingId(id);
+    setLoadingRecusarId(id);
     const prev = [...solicitacoes];
-    setSolicitacoes((s) => s.filter((x) => x.idAgendamento !== id));
 
     try {
-      await recusarAgendamentoPrestador(user.id, id);
+      await recusarAgendamentoPrestador(user.id, id); 
+      setSolicitacoes((s) => s.filter((x) => x.idAgendamento !== id));
       setSnackbar({
         open: true,
         message: "Agendamento recusado.",
@@ -184,8 +185,10 @@ const PageSolicitacoesPrestador: React.FC = () => {
       });
     } finally {
       setProcessingId(null);
+      setLoadingRecusarId(null);
     }
   };
+
 
   function formatarTelefone(telefone?: string | null): string {
     if (!telefone) return "-";
@@ -301,11 +304,21 @@ const PageSolicitacoesPrestador: React.FC = () => {
                           <Button
                             variant="contained"
                             color="error"
-                            disabled={processingId === s.idAgendamento}
+                            disabled={loadingRecusarId === s.idAgendamento}
                             onClick={() => handleRecusar(s.idAgendamento)}
                           >
-                            {processingId === s.idAgendamento ? (
-                              <CircularProgress size={18} />
+                            {loadingRecusarId === s.idAgendamento ? (
+                              <CircularProgress
+                                size={22}
+                                color="inherit"
+                                sx={{
+                                  position: "absolute",
+                                  top: "50%",
+                                  left: "50%",
+                                  marginTop: "-11px",
+                                  marginLeft: "-11px",
+                                }}
+                              />
                             ) : (
                               "Recusar"
                             )}
@@ -358,7 +371,7 @@ const PageSolicitacoesPrestador: React.FC = () => {
         agendamento={
           solicitacaoSelecionada
             ? {
-              // 🔹 campos obrigatórios do DTO
+              //campos obrigatórios do DTO
               idAgendamento: solicitacaoSelecionada.idAgendamento,
 
               // prestador
@@ -384,7 +397,7 @@ const PageSolicitacoesPrestador: React.FC = () => {
               statusAgendamento: solicitacaoSelecionada.statusAgendamento as
                 | "ACEITO"
                 | "PENDENTE"
-                | "RECUSADO"
+                | "NEGADO"
                 | "CANCELADO",
               avaliado: false,
               nota: undefined,

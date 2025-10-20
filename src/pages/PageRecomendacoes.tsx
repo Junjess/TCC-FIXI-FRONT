@@ -51,7 +51,6 @@ const PageRecomendacoes: React.FC = () => {
     const { user, setUser } = useUser();
     const navigate = useNavigate();
 
-    // 🔹 Dialog de confirmação de exclusão
     const [dialogOpen, setDialogOpen] = useState(false);
     const [conversaParaExcluir, setConversaParaExcluir] = useState<number | null>(null);
 
@@ -173,13 +172,11 @@ const PageRecomendacoes: React.FC = () => {
         setMensagens(msgs);
     };
 
-    // 🔹 Criar nova conversa (apenas reseta a tela)
     const novaConversa = () => {
         setConversaSelecionada(null);
         setMensagens([]);
     };
 
-    // 🔹 Enviar mensagem
     const handleSend = async () => {
         if (!input.trim() || iaDigitando) return;
 

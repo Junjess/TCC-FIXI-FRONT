@@ -57,7 +57,6 @@ function MinhasAvaliacoes() {
 
         // Busca nota da plataforma
         const plataforma = await buscarAvaliacoesPlataforma(user.id);
-        // supondo que o último registro é o mais recente
         if (plataforma && plataforma.length > 0) {
           const ultima = plataforma[plataforma.length - 1];
           setNotaPlataforma(ultima.notaFinal);
@@ -132,7 +131,6 @@ function MinhasAvaliacoes() {
   }
 };
 
-  // Relatório 2 - Nota da Plataforma
   const handleDownloadNotaPlataforma = async () => {
     try {
       if (!user?.id) {
@@ -214,7 +212,6 @@ function MinhasAvaliacoes() {
     }
   };
 
-  // Relatório 3 - Desempenho Geral
   const handleDownloadDesempenhoGeral = async () => {
     try {
       if (!user?.id) {

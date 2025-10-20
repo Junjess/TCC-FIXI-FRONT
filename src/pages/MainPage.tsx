@@ -91,6 +91,7 @@ const MainPage: React.FC = () => {
     try {
       if (tipoUsuario === "cliente") {
         const resp = await loginClienteService({ email, senha, tipoUsuario: "CLIENTE" });
+        console.log(resp);
         setUser(resp.usuario, resp.token);
         navigate("/home/cliente");
       } else {
@@ -105,9 +106,16 @@ const MainPage: React.FC = () => {
         severity: "success",
       });
     } catch (error: any) {
+      const data = error?.response?.data;
+      const backendMsg =
+        data?.message ||        
+        data?.detail ||         
+        data?.error ||          
+        (error?.response ? `Erro ${error.response.status}` : null);
+
       setSnackbar({
         open: true,
-        message: error.message || "Erro ao logar",
+        message: backendMsg || "Erro ao logar",
         severity: "error",
       });
     }

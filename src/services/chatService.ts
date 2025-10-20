@@ -15,13 +15,11 @@ export interface ConversaDTO {
   mensagens?: MensagemDTO[];
 }
 
-// Criar conversa
 export const criarConversa = async (clienteId: number): Promise<ConversaDTO> => {
   const res = await api.post(`/api/chat/conversa/${clienteId}`);
   return res.data;
 };
 
-// Buscar mensagens
 export const buscarMensagens = async (
   conversaId: number
 ): Promise<MensagemDTO[]> => {
@@ -29,7 +27,6 @@ export const buscarMensagens = async (
   return res.data;
 };
 
-// Salvar mensagem → agora retorna cliente + IA
 export const salvarMensagem = async (
   conversaId: number,
   mensagem: { autor: "CLIENTE" | "IA"; texto: string }

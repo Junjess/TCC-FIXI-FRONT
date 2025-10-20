@@ -21,7 +21,7 @@ export type AgendamentoRespostaDTO = {
 
   data: string; // "YYYY-MM-DD"
   periodo: string;
-  statusAgendamento: "ACEITO" | "PENDENTE" | "RECUSADO" | "CANCELADO";
+  statusAgendamento: "ACEITO" | "PENDENTE" | "NEGADO" | "CANCELADO";
   avaliado: boolean;
   nota?: number;
   descricaoAvaliacao?: string;
@@ -42,7 +42,7 @@ export type AgendamentoSolicitacaoDTO = {
   periodo: string;
   statusAgendamento: "PENDENTE" | "ACEITO" | "RECUSADO" | "CANCELADO";
 
-  // 🔹 Novos campos
+  //Novos campos
   descricaoServico: string;
   valorSugerido?: number | null;
 };
@@ -52,13 +52,13 @@ export type AgendaPrestadorDTO = {
   idAgendamento: number;
   data: string; // "YYYY-MM-DD"
   periodo: "MATUTINO" | "VESPERTINO";
-  statusAgendamento: "PENDENTE" | "ACEITO" | "RECUSADO" | "CANCELADO";
+  statusAgendamento: "PENDENTE" | "ACEITO" | "NEGADO" | "CANCELADO";
 };
 
 //  Enum para período
 export type Periodo = "MATUTINO" | "VESPERTINO";
 
-// 🔹 Solicitar agendamento (agora com novos campos)
+//Solicitar agendamento (agora com novos campos)
 export async function solicitarAgendamento(
   clienteId: number,
   prestadorId: number,
@@ -137,7 +137,7 @@ export async function cancelarAgendamentoPrestador(
   return data;
 }
 
-// 🔹 lista solicitações pendentes do prestador
+//lista solicitações pendentes do prestador
 export async function listarSolicitacoesPrestador(
   prestadorId: number
 ): Promise<AgendamentoSolicitacaoDTO[]> {

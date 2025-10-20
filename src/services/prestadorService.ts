@@ -36,7 +36,6 @@ export type PrestadorDetalhesDTO = {
   avaliacoes: AvaliacaoDTO[];
 };
 
-// Buscar perfil completo de prestador
 export async function buscarPrestadorPorId(id: number): Promise<PrestadorDetalhesDTO> {
   const { data } = await api.get<PrestadorDetalhesDTO>(`/prestadores/perfil/${id}`);
   return data;
@@ -48,7 +47,6 @@ export function limparTelefone(telefone: string): string {
   return telefone.replace(/\D/g, ""); 
 }
 
-// Cadastro de prestador
 export async function cadastroPrestadorService(prestador: {
   nome: string;
   email: string;
