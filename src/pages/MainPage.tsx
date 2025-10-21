@@ -464,17 +464,20 @@ const MainPage: React.FC = () => {
               <TextField
                 onChange={(e) => setNome(e.target.value)}
                 label="Nome"
+                required
                 sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }}
               />
               <TextField
                 onChange={(e) => setEmail(e.target.value)}
                 label="Email"
                 type="email"
+                required
                 sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }}
               />
               <TextField
                 onChange={(e) => setSenha(e.target.value)}
                 label="Senha"
+                required
                 type={showPassword ? "text" : "password"}
                 sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }}
                 InputProps={{
@@ -501,6 +504,7 @@ const MainPage: React.FC = () => {
               {/* Campo CEP */}
               <TextField
                 label="CEP"
+                required
                 value={cep}
                 onChange={(e) => buscarCep(e.target.value)}
                 sx={{ flex: "1 1 48%", backgroundColor: theme.palette.background.default }}
@@ -524,9 +528,10 @@ const MainPage: React.FC = () => {
               {tipoUsuario === "prestador" && (
                 <>
                   <FormControl sx={{ flex: "1 1 100%" }}>
-                    <FormLabel>Categorias de serviço</FormLabel>
+                    <FormLabel>Categorias de serviço *</FormLabel>
                     <Select
                       multiple
+                      required
                       value={categoriasSelecionadas}
                       onChange={(e) => setCategoriasSelecionadas(e.target.value as number[])}
                       renderValue={(selected) =>

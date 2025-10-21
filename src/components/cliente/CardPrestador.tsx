@@ -68,7 +68,7 @@ export default function CardPrestador({
               {nome}
             </Typography>
 
-            {/* 🔹 Renderiza todas as categorias */}
+            {/*   Renderiza todas as categorias */}
             <Stack direction="row" spacing={1} flexWrap="wrap" mt={1}>
               {categorias.map((cat, idx) => (
                 <Chip

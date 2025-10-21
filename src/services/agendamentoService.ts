@@ -27,7 +27,7 @@ export type AgendamentoRespostaDTO = {
   descricaoAvaliacao?: string;
   canceladoPor?: "CLIENTE" | "PRESTADOR" | null;
 
-  // 🔹 Novos campos
+  //   Novos campos
   descricaoServico: string;
   valorSugerido?: number | null;
 };

@@ -291,6 +291,7 @@ export default function PerfilPrestador() {
             <FormControl fullWidth>
               <InputLabel id="categoria-label">Categoria</InputLabel>
               <Select
+                required
                 labelId="categoria-label"
                 value={categoriaId ?? ""}
                 onChange={(e) => setCategoriaId(e.target.value)}
@@ -304,9 +305,10 @@ export default function PerfilPrestador() {
               </Select>
             </FormControl>
 
-            {/* 🔹 Campo de descrição do serviço */}
+            {/* Campo de descrição do serviço */}
             <TextField
               label="Descrição do serviço"
+              required
               fullWidth
               multiline
               rows={3}
@@ -314,7 +316,7 @@ export default function PerfilPrestador() {
               onChange={(e) => setDescricaoServico(e.target.value)}
             />
 
-            {/* 🔹 Campo de valor sugerido */}
+            {/*   Campo de valor sugerido */}
             <TextField
               label="Valor sugerido (R$)"
               type="number"

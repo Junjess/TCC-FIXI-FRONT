@@ -67,7 +67,7 @@ const DialogEditarPrestador: React.FC<DialogEditarPrestadorProps> = ({
     severity: "success",
   });
 
-  // 🔹 Estados para CEP
+  //   Estados para CEP
   const [viaCepError, setViaCepError] = useState<string | null>(null);
   const [viaCepLoading, setViaCepLoading] = useState(false);
 
@@ -97,7 +97,7 @@ const DialogEditarPrestador: React.FC<DialogEditarPrestadorProps> = ({
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 🔹 Buscar CEP com ViaCEP
+  //   Buscar CEP com ViaCEP
   const buscarCep = async (valor: string) => {
     const cepLimpo = valor.replace(/\D/g, "");
     setFormData((prev) => ({ ...prev, cep: valor }));
