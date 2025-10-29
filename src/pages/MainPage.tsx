@@ -72,7 +72,7 @@ const MainPage: React.FC = () => {
   const [cep, setCep] = useState("");
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
-  const [descricao, setDescricao] = useState("");
+  const [descricao] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [consentimento, setConsentimento] = useState<"aceito" | "naoAceito" | "">("");

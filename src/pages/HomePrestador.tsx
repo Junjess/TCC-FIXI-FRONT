@@ -46,8 +46,8 @@ const HomePrestador: React.FC = () => {
   const [agendamentos, setAgendamentos] = useState<AgendamentoRespostaDTO[]>([]);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>("todos");
   const [openDialog, setOpenDialog] = useState(false);
-  const [formData, setFormData] = useState<Partial<PrestadorProfileDTO>>({});
-  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [, setFormData] = useState<Partial<PrestadorProfileDTO>>({});
+  const [, setFotoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelando, setCancelando] = useState<Set<number>>(new Set());
   const [dialogDetalhesOpen, setDialogDetalhesOpen] = useState(false);

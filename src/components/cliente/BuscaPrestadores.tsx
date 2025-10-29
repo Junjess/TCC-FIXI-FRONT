@@ -54,7 +54,7 @@ export default function BuscaPrestadores({ busca, categorias = [] }: Props) {
     };
 
     fetchPrestadores();
-  }, [user?.id, user?.cidade, user?.estado, debouncedBusca, categoriasKey]);
+  }, [user?.id, user?.cidade, user?.estado, debouncedBusca, categoriasKey, categorias]);
 
   if (loading) {
     return (

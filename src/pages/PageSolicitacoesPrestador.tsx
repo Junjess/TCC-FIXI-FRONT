@@ -52,7 +52,7 @@ const PageSolicitacoesPrestador: React.FC = () => {
   const [solicitacoes, setSolicitacoes] = useState<AgendamentoSolicitacao[]>([]);
   const [loadingSolicitacoes, setLoadingSolicitacoes] = useState(true);
   const [loadingSalvar, setLoadingSalvar] = useState(false);
-  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [, setProcessingId] = useState<number | null>(null);
   const [loadingAceitarId, setLoadingAceitarId] = useState<number | null>(null);
   const [loadingRecusarId, setLoadingRecusarId] = useState<number | null>(null);
 
@@ -67,8 +67,8 @@ const PageSolicitacoesPrestador: React.FC = () => {
   });
 
   const [openDialog, setOpenDialog] = useState(false);
-  const [formData, setFormData] = useState<Partial<PrestadorProfileDTO>>({});
-  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [, setFormData] = useState<Partial<PrestadorProfileDTO>>({});
+  const [, setFotoFile] = useState<File | null>(null);
   const [dialogDetalhesOpen, setDialogDetalhesOpen] = useState(false);
   const [solicitacaoSelecionada, setSolicitacaoSelecionada] = useState<AgendamentoSolicitacao | null>(null);
 
@@ -388,8 +388,8 @@ const PageSolicitacoesPrestador: React.FC = () => {
               nomeCliente: solicitacaoSelecionada.nomeCliente ?? "Cliente",
               telefoneCliente: solicitacaoSelecionada.telefoneCliente ?? "",
               fotoCliente: solicitacaoSelecionada.fotoCliente ?? null,
-              cidadeCliente: "", // ainda não vem no DTO da solicitação
-              estadoCliente: "", // idem
+              cidadeCliente: "",
+              estadoCliente: "", 
 
               // agendamento
               data: solicitacaoSelecionada.data,
@@ -409,7 +409,7 @@ const PageSolicitacoesPrestador: React.FC = () => {
               // novos campos
               descricaoServico: (solicitacaoSelecionada as any).descricaoServico ?? "",
               valorSugerido:
-                (solicitacaoSelecionada as any).valorSugerido ?? null, // pode adaptar se ainda não vem
+                (solicitacaoSelecionada as any).valorSugerido ?? null, 
             }
             : null
         }

@@ -38,7 +38,7 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
   const [avaliarOpen, setAvaliarOpen] = useState(false);
   const [avaliarNota, setAvaliarNota] = useState<number | null>(0);
   const [avaliarDescricao, setAvaliarDescricao] = useState("");
-  const [avaliarAgendamentoId, setAvaliarAgendamentoId] = useState<number | null>(null);
+  const [avaliarAgendamentoId] = useState<number | null>(null);
   const [cancelando, setCancelando] = useState<Set<number>>(new Set());
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -60,7 +60,6 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
     listarAgendamentosPorCliente(clienteId)
       .then((res) => {
         if (isMounted) {
-          const hoje = dayjs().startOf("day");
 
           const filtrados = res.filter((a) => {
             const dataAg = dayjs(a.data).startOf("day");
@@ -167,7 +166,6 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
           const dataAg = dayjs(ag.data);
           const hoje = dayjs().startOf("day");
           const dataFutura = !dataAg.isBefore(hoje);
-          const dataPassada = dataAg.isBefore(hoje);
 
           return (
             <Card

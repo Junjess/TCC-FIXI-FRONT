@@ -84,7 +84,6 @@ export default function HistoricoPrestador() {
     ag.notaAvaliacaoCliente != null &&
     ag.comentarioAvaliacaoCliente != null;
 
-  const podeAvaliar = (ag: AgendamentoRespostaDTO) => !ag.avaliacaoPrestadorFeita;
 
   function abrirAvaliar(idAgendamento: number) {
     setAvaliarAgendamentoId(idAgendamento);
