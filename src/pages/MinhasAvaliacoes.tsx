@@ -30,7 +30,6 @@ import html2canvas from "html2canvas";
 import { buscarAvaliacoesPlataforma, buscarDesempenhoGeral } from "../services/avaliacaoService";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { createRoot } from "react-dom/client";
-import { useTheme } from "@mui/material/styles";
 
 function MinhasAvaliacoes() {
   const { user, setUser } = useUser();
@@ -40,7 +39,6 @@ function MinhasAvaliacoes() {
   const [openDialog, setOpenDialog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notaPlataforma, setNotaPlataforma] = useState<number | null>(null);
-  const theme = useTheme();
 
   interface LinhaResumo {
     periodo: string;
