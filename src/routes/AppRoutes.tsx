@@ -10,6 +10,7 @@ import PageSolicitacoesPrestador from '../pages/PageSolicitacoesPrestador'
 import MinhasAvaliacoes from '../pages/MinhasAvaliacoes'
 import PageRecomendacoes from '../pages/PageRecomendacoes'
 import PrivateRoute from "./PrivateRoute";
+import HistoricoPrestador from '../pages/HistoricoPrestador'
 
 function AppRoutes() {
   return (
@@ -79,6 +80,16 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
+
+      <Route
+        path="/prestador/historico"
+        element={
+          <PrivateRoute role="PRESTADOR">
+            <HistoricoPrestador />
+          </PrivateRoute>
+        }
+      />
+
       <Route path="*" element={<Navigate to="/main" replace />} />
     </Routes>
   );

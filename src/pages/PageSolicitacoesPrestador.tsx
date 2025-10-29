@@ -400,8 +400,10 @@ const PageSolicitacoesPrestador: React.FC = () => {
                 | "NEGADO"
                 | "CANCELADO",
               avaliado: false,
-              nota: undefined,
-              descricaoAvaliacao: undefined,
+              notaAvaliacaoCliente: undefined,
+              notaAvaliacaoPrestador: undefined,
+              comentarioAvaliacaoCliente: undefined,
+              comentarioAvaliacaoPrestador: undefined,
               canceladoPor: null,
 
               // novos campos

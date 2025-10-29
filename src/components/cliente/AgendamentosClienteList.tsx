@@ -23,9 +23,9 @@ import {
   listarAgendamentosPorCliente,
   AgendamentoRespostaDTO,
 } from "../../services/agendamentoService";
-import { salvarAvaliacao } from "../../services/avaliacaoService";
 import { useUser } from "../../contexts/UserContext";
 import dayjs from "dayjs";
+import { salvarAvaliacaoCliente } from "../../services/avaliacaoService";
 
 type Props = {
   clienteId: number;
@@ -122,7 +122,7 @@ export default function AgendamentosClienteList({ clienteId }: Props) {
   async function salvar() {
     if (!avaliarAgendamentoId) return;
     try {
-      await salvarAvaliacao({
+      await salvarAvaliacaoCliente({
         agendamentoId: avaliarAgendamentoId,
         nota: avaliarNota ?? 0,
         descricao: avaliarDescricao,

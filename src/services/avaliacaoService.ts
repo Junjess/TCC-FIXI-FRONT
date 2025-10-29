@@ -7,8 +7,16 @@ export type AvaliacaoRequest = {
   descricao: string;
 };
 
-export async function salvarAvaliacao(payload: AvaliacaoRequest) {
-  await api.post("/avaliacoes", payload);
+//cliente avalia o prestador
+export async function salvarAvaliacaoCliente(data: AvaliacaoRequest) {
+  const resp = await api.post("/avaliacoes/cliente-para-prestador", data);
+  return resp.data;
+}
+
+//prestador avalia o cliente
+export async function salvarAvaliacaoPrestador(data: AvaliacaoRequest) {
+  const resp = await api.post("/avaliacoes/prestador-para-cliente", data);
+  return resp.data;
 }
 
 export async function listarAvaliacoesPrestador(idPrestador: number): Promise<AvaliacaoDTO[]> {

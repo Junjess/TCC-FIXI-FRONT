@@ -248,11 +248,7 @@ const HomePrestador: React.FC = () => {
                     <CardContent>
                       <Stack direction="row" spacing={2} alignItems="center">
                         <Avatar
-                          src={
-                            ag.fotoCliente && ag.fotoTipoCliente
-                              ? `data:${ag.fotoTipoCliente};base64,${ag.fotoCliente}`
-                              : undefined
-                          }
+                          src={ag.fotoCliente ? `data:${ag.fotoTipoCliente ?? "image/jpeg"};base64,${ag.fotoCliente}` : undefined}
                           alt={ag.nomeCliente}
                           sx={{ width: 64, height: 64, fontSize: 24 }}
                         >

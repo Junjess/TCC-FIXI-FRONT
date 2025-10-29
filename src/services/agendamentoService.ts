@@ -10,7 +10,6 @@ export type AgendamentoRespostaDTO = {
   estadoPrestador: string | null;
   categoriaAgendamento: string | null;
 
-  // Campos do CLIENTE (para a tela HomePrestador)
   idCliente: number;
   nomeCliente: string;
   telefoneCliente: string | null;
@@ -23,9 +22,15 @@ export type AgendamentoRespostaDTO = {
   periodo: string;
   statusAgendamento: "ACEITO" | "PENDENTE" | "NEGADO" | "CANCELADO";
   avaliado: boolean;
-  nota?: number;
-  descricaoAvaliacao?: string;
   canceladoPor?: "CLIENTE" | "PRESTADOR" | null;
+
+  avaliacaoClienteFeita?: boolean;  
+  avaliacaoPrestadorFeita?: boolean;
+
+  notaAvaliacaoPrestador?: number;
+  comentarioAvaliacaoPrestador?: string;
+  notaAvaliacaoCliente?: number;
+  comentarioAvaliacaoCliente?: string;
 
   //   Novos campos
   descricaoServico: string;
@@ -47,7 +52,6 @@ export type AgendamentoSolicitacaoDTO = {
   valorSugerido?: number | null;
 };
 
-// DTO usado no agendamento do prestador (para marcar horários)
 export type AgendaPrestadorDTO = {
   idAgendamento: number;
   data: string; // "YYYY-MM-DD"
@@ -55,10 +59,8 @@ export type AgendaPrestadorDTO = {
   statusAgendamento: "PENDENTE" | "ACEITO" | "NEGADO" | "CANCELADO";
 };
 
-//  Enum para período
 export type Periodo = "MATUTINO" | "VESPERTINO";
 
-//Solicitar agendamento (agora com novos campos)
 export async function solicitarAgendamento(
   clienteId: number,
   prestadorId: number,
@@ -137,7 +139,6 @@ export async function cancelarAgendamentoPrestador(
   return data;
 }
 
-//lista solicitações pendentes do prestador
 export async function listarSolicitacoesPrestador(
   prestadorId: number
 ): Promise<AgendamentoSolicitacaoDTO[]> {

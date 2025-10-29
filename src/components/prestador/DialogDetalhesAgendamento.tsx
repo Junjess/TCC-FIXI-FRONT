@@ -91,10 +91,10 @@ const DialogDetalhesAgendamento: React.FC<Props> = ({
                     {agendamento.avaliado && (
                         <Box>
                             <Typography variant="body1">
-                                <strong>Avaliação:</strong> {agendamento.nota}/5
+                                <strong>Avaliação:</strong> {agendamento.notaAvaliacaoPrestador}/5
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                {agendamento.descricaoAvaliacao}
+                                {agendamento.comentarioAvaliacaoPrestador}
                             </Typography>
                         </Box>
                     )}

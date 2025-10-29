@@ -10,7 +10,7 @@ import {
     MenuItem,
     Badge,
 } from "@mui/material";
-import { Home, BuildCircle, Star, AccountCircle } from "@mui/icons-material";
+import { Home, BuildCircle, Star, AccountCircle, History } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { contarSolicitacoesPendentes } from "../../services/agendamentoService";
@@ -102,6 +102,15 @@ const HeaderPrestador: React.FC<HeaderPrestadorProps> = ({ onEditarPerfil }) => 
                         onClick={() => navigate("/avaliacoes")}
                     >
                         Minhas Avaliações
+                    </Button>
+
+                    <Button
+                        color="inherit"
+                        startIcon={<History />}
+                        sx={{ textTransform: "none", fontWeight: "bold", mr: 4 }}
+                        onClick={() => navigate("/prestador/historico")}
+                    >
+                        Histórico
                     </Button>
                 </Box>
 
