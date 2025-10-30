@@ -1,6 +1,7 @@
-import axios from "axios";
+// autenticacaoServices.ts
+import { api } from "./api"; // <-- usa o axios já configurado
 import { ClienteDTO } from "./clienteService";
-import { PrestadorProfileDTO } from "./prestadorService"; 
+import { PrestadorProfileDTO } from "./prestadorService";
 
 type Login = {
   email: string;
@@ -28,7 +29,7 @@ type CadastroPrestador = {
   categoriasIds: number[];
 };
 
-const API_URL = "http://localhost:8080/auth";
+const API_PREFIX = "/auth";
 
 export interface LoginResponse<T> {
   token: string;
@@ -38,39 +39,43 @@ export interface LoginResponse<T> {
 export const loginClienteService = async (
   data: Login
 ): Promise<LoginResponse<ClienteDTO>> => {
-  const response = await axios.post<LoginResponse<ClienteDTO>>(
-    `${API_URL}/login/cliente`,
+  const { data: resp } = await api.post<LoginResponse<ClienteDTO>>(
+    `${API_PREFIX}/login/cliente`,
     data
   );
-  return response.data;
+  return resp;
 };
 
 export const loginPrestadorService = async (
   data: Login
 ): Promise<LoginResponse<PrestadorProfileDTO>> => {
-  const response = await axios.post<LoginResponse<PrestadorProfileDTO>>(
-    `${API_URL}/login/prestador`,
+  const { data: resp } = await api.post<LoginResponse<PrestadorProfileDTO>>(
+    `${API_PREFIX}/login/prestador`,
     data
   );
-  return response.data;
+  return resp;
 };
 
-export const cadastroClienteService = async (data: CadastroCliente): Promise<ClienteDTO> => {
+export const cadastroClienteService = async (
+  data: CadastroCliente
+): Promise<ClienteDTO> => {
   try {
-    const response = await axios.post(`${API_URL}/cadastro/cliente`, data);
-    return response.data;
+    const { data: resp } = await api.post(`${API_PREFIX}/cadastro/cliente`, data);
+    return resp;
   } catch (error: any) {
     console.error("Erro ao cadastrar cliente:", error);
-    throw new Error(error.response?.data || "Erro ao cadastrar cliente");
+    throw new Error(error?.response?.data || "Erro ao cadastrar cliente");
   }
 };
 
-export const cadastroPrestadorService = async (data: CadastroPrestador): Promise<PrestadorProfileDTO> => {
+export const cadastroPrestadorService = async (
+  data: CadastroPrestador
+): Promise<PrestadorProfileDTO> => {
   try {
-    const response = await axios.post(`${API_URL}/cadastro/prestador`, data);
-    return response.data;
+    const { data: resp } = await api.post(`${API_PREFIX}/cadastro/prestador`, data);
+    return resp;
   } catch (error: any) {
     console.error("Erro ao cadastrar prestador:", error);
-    throw new Error(error.response?.data || "Erro ao cadastrar prestador");
+    throw new Error(error?.response?.data || "Erro ao cadastrar prestador");
   }
 };

@@ -25,15 +25,25 @@ export async function listarAvaliacoesPrestador(idPrestador: number): Promise<Av
 }
 
 export const buscarAvaliacoesPlataforma = async (prestadorId: number) => {
-  const response = await fetch(`http://localhost:8080/avaliacoes/plataforma/${prestadorId}`);
-  if (!response.ok) throw new Error("Erro ao buscar avaliações da plataforma");
-
-  const data = await response.json(); 
-  return data;
+  try {
+    const { data } = await api.get(`/avaliacoes/plataforma/${prestadorId}`);
+    return data;
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ?? "Erro ao buscar avaliações da plataforma";
+    throw new Error(msg);
+  }
 };
 
 export const buscarDesempenhoGeral = async (prestadorId: number) => {
-  const response = await fetch(`http://localhost:8080/avaliacoes/plataforma/${prestadorId}/desempenho`);
-  if (!response.ok) throw new Error("Erro ao buscar desempenho geral");
-  return response.json();
+  try {
+    const { data } = await api.get(
+      `/avaliacoes/plataforma/${prestadorId}/desempenho`
+    );
+    return data;
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ?? "Erro ao buscar desempenho geral";
+    throw new Error(msg);
+  }
 };

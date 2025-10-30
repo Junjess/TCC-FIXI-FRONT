@@ -30,6 +30,7 @@ import html2canvas from "html2canvas";
 import { buscarAvaliacoesPlataforma, buscarDesempenhoGeral } from "../services/avaliacaoService";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { createRoot } from "react-dom/client";
+import { api } from "../services/api";
 
 function MinhasAvaliacoes() {
   const { user, setUser } = useUser();
@@ -96,38 +97,36 @@ function MinhasAvaliacoes() {
     }
   };
 
- const handleDownloadAvaliacoes = async () => {
-  try {
-    if (!user?.id) {
-      alert("Usuário não encontrado");
-      return;
+
+  const handleDownloadAvaliacoes = async () => {
+    try {
+      if (!user?.id) {
+        alert("Usuário não encontrado");
+        return;
+      }
+
+      const response = await api.get(`/avaliacoes/${user.id}/download`, {
+        responseType: "blob", // necessário para arquivos binários (PDF)
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "avaliacoes-clientes.pdf";
+      document.body.appendChild(a);
+      a.click();
+
+      // Limpeza
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error(err);
+      alert(
+        err?.response?.data?.message ||
+        "Erro ao baixar avaliações. Tente novamente."
+      );
     }
-
-    const response = await fetch(`http://localhost:8080/avaliacoes/${user.id}/download`, {
-      method: "GET",
-    });
-
-    if (!response.ok) {
-      throw new Error("Erro ao baixar avaliações");
-    }
-
-    // já é PDF vindo do back
-    const blob = await response.blob();
-
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "avaliacoes-clientes.pdf";
-    document.body.appendChild(a);
-    a.click();
-
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao baixar avaliações");
-  }
-};
+  };
 
   const handleDownloadNotaPlataforma = async () => {
     try {
