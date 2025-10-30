@@ -5,7 +5,9 @@ const apiBase =
   localStorage.getItem("API_BASE") ||
   process.env.REACT_APP_API_BASE_URL;
 
+console.log("[API_BASE]", apiBase); 
+
 export const api = axios.create({
   baseURL: apiBase,
-  // withCredentials: true, // se usar cookie de sessão
+  // withCredentials: true,
 });
