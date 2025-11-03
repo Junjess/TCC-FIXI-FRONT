@@ -38,6 +38,9 @@ import TrocarTema from "../components/TrocarTema";
 import { useUser } from "../contexts/UserContext";
 import dayjs from "dayjs";
 import HeaderCliente from "../components/cliente/HeaderCliente";
+import "dayjs/locale/pt-br";
+
+dayjs.locale("pt-br");
 
 export default function PerfilPrestador() {
   const { id } = useParams<{ id: string }>();
@@ -333,7 +336,9 @@ export default function PerfilPrestador() {
                 sx={{ border: "1px solid #ddd", borderRadius: 2, p: 2 }}
               >
                 <Typography variant="subtitle1" fontWeight="bold">
-                  {dayjs(dia.data).format("dddd, DD/MM")}
+                  {dayjs(dia.data)
+                    .format("dddd, DD/MM")
+                    .replace(/^([a-z])/g, (letra) => letra.toUpperCase())}
                 </Typography>
 
                 <Stack direction="row" spacing={2} mt={1}>
