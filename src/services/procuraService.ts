@@ -26,39 +26,21 @@ type ListarPrestadoresParams = {
   estado?: string;
 };
 
-export async function listarPrestadores({
-  idCliente,
-  busca,
-  categorias,
-  cidade,
-  estado,
-}: ListarPrestadoresParams): Promise<PrestadorDTO[]> {
-  const params: any = {};
-
-  if (busca && busca.trim()) params.q = busca.trim();
-  if (categorias && categorias.length > 0)
-    params.categorias = categorias.join(",");
-  if (cidade) params.cidade = cidade;
-  if (estado) params.estado = estado;
-
-  const { data } = await api.get(`/prestadores/${idCliente}`, { params });
-  console.log("RAW /prestadores:", data);
-
-  return (data ?? []).map((p: any) => ({
-    id: p.id,
-    nome: p.nome,
-    telefone: p.telefone,
-    foto: p.foto,
-    cidade: p.cidade,
-    estado: p.estado,
-    descricao: p.descricao,
-    categorias: Array.isArray(p.categorias)
-      ? p.categorias.map((c: any) => ({
-          nomeCategoria: c.nomeCategoria,
-          descricao: c.descricao ?? null,
-        }))
-      : [], 
-    mediaAvaliacao: typeof p.mediaAvaliacao === "number" ? p.mediaAvaliacao : 0,
-    notaPlataforma: typeof p.notaPlataforma === "number" ? p.notaPlataforma : 0,
-  }));
+export async function listarPrestadores(params: {
+  idCliente?: number;
+  busca?: string;
+  categorias?: number[];
+  cidade?: string;
+  estado?: string;
+}) {
+  const { data } = await api.get<PrestadorDTO[]>("/procura/prestadores", {
+    params: {
+      idCliente: params.idCliente, 
+      busca: params.busca || undefined,
+      categorias: params.categorias?.length ? params.categorias.join(",") : undefined,
+      cidade: params.cidade || undefined,
+      estado: params.estado || undefined,
+    },
+  });
+  return data;
 }
