@@ -26,7 +26,7 @@ interface CardPrestadorProps {
   foto?: string;
   mediaAvaliacao?: number;
   notaPlataforma?: number;
-  descricao: string;
+  descricao?: string;
 }
 
 export default function CardPrestador({

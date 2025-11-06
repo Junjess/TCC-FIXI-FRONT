@@ -3,13 +3,14 @@ import { Stack, CircularProgress, Typography } from "@mui/material";
 import CardPrestador from "./CardPrestador";
 import { listarPrestadores, PrestadorDTO } from "../../services/procuraService";
 import TrocarTema from "../TrocarTema";
+import { useUser } from "../../contexts/UserContext"; // <- garante que existe
 
 type Props = {
   busca: string;
   categorias?: number[];
-  aplicarTick: number;            
+  aplicarTick: number;
   uf?: string | null;
-  cidades?: string[];             
+  cidades?: string[];
 };
 
 function uniqueById(lista: PrestadorDTO[]): PrestadorDTO[] {
@@ -28,14 +29,27 @@ export default function BuscaPrestadores({
   const [prestadores, setPrestadores] = useState<PrestadorDTO[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const { user } = useUser();
+  const idCliente = user?.id;
+
   useEffect(() => {
-    let alive = true; 
+    let alive = true;
     const fetchPrestadores = async () => {
+      if (!idCliente) {
+        setPrestadores([]);
+        return;
+      }
       setLoading(true);
       try {
         if (cidades.length > 0) {
           const calls = cidades.map((cidade) =>
-            listarPrestadores({ busca, categorias, cidade, estado: uf || undefined })
+            listarPrestadores({
+              busca,
+              categorias,
+              cidade,
+              estado: uf || undefined,
+              idCliente,
+            })
           );
           const results = await Promise.all(calls);
           const merged = uniqueById(results.flat());
@@ -45,6 +59,7 @@ export default function BuscaPrestadores({
             busca,
             categorias,
             estado: uf || undefined,
+            idCliente,
           });
           if (alive) setPrestadores(data);
         }
@@ -58,7 +73,8 @@ export default function BuscaPrestadores({
 
     fetchPrestadores();
     return () => { alive = false; };
-  }, [aplicarTick, busca, uf, categorias, cidades]);
+  }, [aplicarTick, busca, uf, categorias, cidades, idCliente]);
+
   if (loading) {
     return (
       <Stack alignItems="center" sx={{ mt: 5 }}>
@@ -86,10 +102,10 @@ export default function BuscaPrestadores({
           cidade={p.cidade}
           estado={p.estado}
           telefone={p.telefone}
-          foto={p.foto}
-          mediaAvaliacao={p.mediaAvaliacao}
-          notaPlataforma={p.notaPlataforma}
-          descricao={p.descricao}
+          foto={p.foto ?? undefined}
+          mediaAvaliacao={p.mediaAvaliacao ?? undefined}
+          notaPlataforma={p.notaPlataforma ?? undefined}
+          descricao={p.descricao ?? ""}  
         />
       ))}
       <TrocarTema />
