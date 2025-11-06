@@ -29,6 +29,7 @@ export default function BuscaPrestadores({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let alive = true; 
     const fetchPrestadores = async () => {
       setLoading(true);
       try {
@@ -38,26 +39,26 @@ export default function BuscaPrestadores({
           );
           const results = await Promise.all(calls);
           const merged = uniqueById(results.flat());
-          setPrestadores(merged);
+          if (alive) setPrestadores(merged);
         } else {
           const data = await listarPrestadores({
             busca,
             categorias,
-            estado: uf || undefined, 
+            estado: uf || undefined,
           });
-          setPrestadores(data);
+          if (alive) setPrestadores(data);
         }
       } catch (error) {
         console.error("Erro ao buscar prestadores:", error);
-        setPrestadores([]);
+        if (alive) setPrestadores([]);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     };
 
     fetchPrestadores();
-  }, [aplicarTick, busca, uf, JSON.stringify(categorias), JSON.stringify(cidades)]);
-
+    return () => { alive = false; };
+  }, [aplicarTick, busca, uf, categorias, cidades]);
   if (loading) {
     return (
       <Stack alignItems="center" sx={{ mt: 5 }}>
