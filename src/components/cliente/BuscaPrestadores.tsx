@@ -1,5 +1,4 @@
-// components/cliente/BuscaPrestadores.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Stack, CircularProgress, Typography } from "@mui/material";
 import CardPrestador from "./CardPrestador";
 import { listarPrestadores, PrestadorDTO } from "../../services/procuraService";
@@ -8,10 +7,9 @@ import TrocarTema from "../TrocarTema";
 type Props = {
   busca: string;
   categorias?: number[];
-  // NOVO: filtros vindos do pai
-  aplicarTick: number;            // muda quando o usuário clica "Aplicar"
+  aplicarTick: number;            
   uf?: string | null;
-  cidades?: string[];             // pode ser vazio ou múltiplas cidades
+  cidades?: string[];             
 };
 
 function uniqueById(lista: PrestadorDTO[]): PrestadorDTO[] {
@@ -39,7 +37,6 @@ export default function BuscaPrestadores({
             listarPrestadores({ busca, categorias, cidade, estado: uf || undefined })
           );
           const results = await Promise.all(calls);
-          // "listarPrestadores" pode devolver array simples; concatenamos tudo
           const merged = uniqueById(results.flat());
           setPrestadores(merged);
         } else {
@@ -58,7 +55,6 @@ export default function BuscaPrestadores({
       }
     };
 
-    // Executa só quando clicar "Aplicar" no pai (aplicarTick muda)
     fetchPrestadores();
   }, [aplicarTick, busca, uf, JSON.stringify(categorias), JSON.stringify(cidades)]);
 

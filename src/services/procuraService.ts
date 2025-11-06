@@ -18,13 +18,14 @@ export type PrestadorDTO = {
   notaPlataforma: number; 
 };
 
+{/* Dialog de filtros 
 type ListarPrestadoresParams = {
   idCliente: number;
   busca?: string;
   categorias?: number[];
   cidade?: string;
   estado?: string;
-};
+};*/}
 
 export async function listarPrestadores(params: {
   idCliente?: number;

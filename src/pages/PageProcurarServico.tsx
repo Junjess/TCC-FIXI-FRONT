@@ -1,10 +1,9 @@
-// pages/PageProcurarServico.tsx (trechos principais)
 import React, { useState, useEffect } from "react";
 import {
   Box, Button, Chip, Stack, Container, Card, CircularProgress, TextField,
   InputAdornment, InputLabel, Avatar, Typography, IconButton,
-  DialogContent, DialogActions, Dialog, Autocomplete
-} from "@mui/material"; // <— Autocomplete aqui
+  DialogContent, DialogActions, Dialog, DialogTitle, Autocomplete
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CloseIcon from "@mui/icons-material/Close";
@@ -15,7 +14,8 @@ import { useTheme } from "@mui/material/styles";
 import HeaderCliente from "../components/cliente/HeaderCliente";
 import TrocarTema from "../components/TrocarTema";
 import { useNavigate } from "react-router-dom";
-import { UFS, listarCidadesPorUF } from "../services/ibgeService"; // <— NOVO
+import { UFS, listarCidadesPorUF } from "../services/ibgeService";
+import { ClienteDTO, atualizarCliente, atualizarFotoCliente } from "../services/clienteService";
 
 export default function PageProcurarServico() {
   const theme = useTheme();
@@ -27,40 +27,19 @@ export default function PageProcurarServico() {
   const [categorias, setCategorias] = useState<CategoriaDTO[]>([]);
   const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<number[]>([]);
 
-  // NOVO: estado de filtros de localização
+  const [openDialog, setOpenDialog] = useState(false);
+  const [formData, setFormData] = useState<Partial<ClienteDTO>>({});
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [previewFoto, setPreviewFoto] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [viaCepLoading, setViaCepLoading] = useState(false);
+  const [viaCepError, setViaCepError] = useState<string | null>(null);
+
   const [ufSel, setUfSel] = useState<string | null>(null);
   const [cidadesOpcoes, setCidadesOpcoes] = useState<string[]>([]);
   const [cidadesSel, setCidadesSel] = useState<string[]>([]);
 
-  // Tick para disparar busca no filho somente ao clicar “Aplicar”
   const [aplicarTick, setAplicarTick] = useState(0);
-
-  useEffect(() => {
-    if (openFiltros) listarCategorias().then(setCategorias).catch(console.error);
-  }, [openFiltros]);
-
-  useEffect(() => {
-    // quando muda UF, carrega as cidades via IBGE e limpa seleção anterior
-    (async () => {
-      if (!ufSel) { setCidadesOpcoes([]); setCidadesSel([]); return; }
-      const lista = await listarCidadesPorUF(ufSel);
-      setCidadesOpcoes(lista);
-      setCidadesSel([]); // limpa
-    })();
-  }, [ufSel]);
-
-  const toggleCategoria = (id: number) => {
-    setCategoriasSelecionadas((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-
-  const limparFiltros = () => {
-    setCategoriasSelecionadas([]);
-    setUfSel(null);
-    setCidadesOpcoes([]);
-    setCidadesSel([]);
-  };
 
   if (!user) {
     return (
@@ -70,10 +49,131 @@ export default function PageProcurarServico() {
     );
   }
 
+  useEffect(() => {
+    if (openFiltros) listarCategorias().then(setCategorias).catch(console.error);
+  }, [openFiltros]);
+
+  useEffect(() => {
+    (async () => {
+      if (!ufSel) { setCidadesOpcoes([]); setCidadesSel([]); return; }
+      const lista = await listarCidadesPorUF(ufSel);
+      setCidadesOpcoes(lista);
+      setCidadesSel([]);
+    })();
+  }, [ufSel]);
+
+  const toggleCategoria = (id: number) => {
+    setCategoriasSelecionadas((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  // === Abertura do Dialog de Edição ===
+  const handleOpenDialog = () => {
+    setFormData({
+      nome: user.nome,
+      email: user.email,
+      telefone: user.telefone,
+      cep: user.cep,
+      cidade: user.cidade,
+      estado: user.estado,
+    });
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setFormData({});
+    setFotoFile(null);
+    setPreviewFoto(null);
+    setViaCepError(null);
+    setViaCepLoading(false);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFotoFile(file);
+      setPreviewFoto(URL.createObjectURL(file));
+    }
+  };
+
+  const buscarCidadeEstadoPorCep = async (cep: string) => {
+    const cepNum = cep.replace(/\D/g, "");
+    if (cepNum.length !== 8) {
+      setViaCepError("CEP deve conter 8 dígitos.");
+      return;
+    }
+
+    try {
+      setViaCepLoading(true);
+      setViaCepError(null);
+
+      const resp = await fetch(`https://viacep.com.br/ws/${cepNum}/json/`);
+      const data = await resp.json();
+
+      if (data?.erro) {
+        setViaCepError("CEP não encontrado.");
+        setFormData((prev) => ({
+          ...prev,
+          cidade: "",
+          estado: "",
+        }));
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        cep: cep,
+        cidade: data.localidade || "",
+        estado: data.uf || "",
+      }));
+    } catch (err) {
+      console.error("Erro ao consultar ViaCEP", err);
+      setViaCepError("Erro ao buscar CEP. Tente novamente.");
+    } finally {
+      setViaCepLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+
+      if (Object.keys(formData).length > 0) {
+        const updated = await atualizarCliente(user.id, formData);
+        setUser(updated);
+      }
+
+      if (fotoFile) {
+        const updated = await atualizarFotoCliente(user.id, fotoFile);
+        setUser(updated);
+      }
+
+      handleCloseDialog();
+    } catch (err) {
+      console.error("Erro ao atualizar cliente", err);
+      alert("Erro ao atualizar cliente");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const limparFiltros = () => {
+    setCategoriasSelecionadas([]);
+    setUfSel(null);
+    setCidadesOpcoes([]);
+    setCidadesSel([]);
+  };
+
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: theme.palette.background.paper }}>
       <HeaderCliente
-        onEditarPerfil={() => {/* ...mantém igual... */}}
+        onEditarPerfil={handleOpenDialog}
         onLogout={() => { setUser(null); navigate("/main"); }}
       />
 
@@ -105,7 +205,6 @@ export default function PageProcurarServico() {
             </Button>
           </Stack>
 
-          {/* Chips de categorias ativas (opcional) */}
           {categoriasSelecionadas.length > 0 && (
             <Stack direction="row" spacing={1} sx={{ p: 2, flexWrap: "wrap" }}>
               <InputLabel sx={{ alignSelf: "center" }}>Categorias:</InputLabel>
@@ -124,7 +223,6 @@ export default function PageProcurarServico() {
             </Stack>
           )}
 
-          {/* Busca — agora só roda quando aplicarTick muda */}
           <BuscaPrestadores
             busca={busca}
             categorias={categoriasSelecionadas}
@@ -138,13 +236,11 @@ export default function PageProcurarServico() {
       {/* Dialog de filtros */}
       <Dialog open={openFiltros} onClose={() => setOpenFiltros(false)} fullWidth maxWidth="sm"
         PaperProps={{ sx: { borderRadius: "16px", p: 2, backgroundColor: theme.palette.background.default } }}>
-        {/* Cabeçalho */}
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
           <Typography variant="h6" fontWeight="bold" color="primary">Filtros</Typography>
           <IconButton onClick={() => setOpenFiltros(false)} color="primary"><CloseIcon /></IconButton>
         </Stack>
 
-        {/* Conteúdo */}
         <DialogContent dividers sx={{ borderRadius: 2 }}>
           <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 500 }}>Categorias</Typography>
           <Box sx={{ p: 2, borderRadius: 2, backgroundColor: theme.palette.background.paper, boxShadow: 1, mb: 3 }}>
@@ -162,7 +258,6 @@ export default function PageProcurarServico() {
             </Stack>
           </Box>
 
-          {/* NOVO: Localização */}
           <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 500 }}>Localização</Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <Autocomplete
@@ -187,7 +282,6 @@ export default function PageProcurarServico() {
           </Stack>
         </DialogContent>
 
-        {/* Ações */}
         <DialogActions sx={{ mt: 1 }}>
           <Button onClick={limparFiltros} variant="outlined" color="secondary">Limpar</Button>
           <Button
@@ -195,6 +289,118 @@ export default function PageProcurarServico() {
             variant="contained" color="primary" sx={{ fontWeight: "bold" }}
           >
             Aplicar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* === Dialog de EDIÇÃO DE PERFIL (replicado do HomeCliente) === */}
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3, p: 2 } }}
+      >
+        <DialogTitle sx={{ fontWeight: "bold", textAlign: "center" }}>
+          Editar Perfil
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1} alignItems="center">
+            {/* Foto de perfil */}
+            <Avatar
+              src={
+                previewFoto ||
+                (user?.foto && user?.fotoTipo
+                  ? `data:${user.fotoTipo};base64,${user.foto}`
+                  : undefined)
+              }
+              alt={formData.nome || "Foto"}
+              sx={{ width: 120, height: 120, mb: 2 }}
+            />
+            <Button variant="outlined" component="label">
+              {fotoFile ? "Foto selecionada" : "Alterar Foto"}
+              <input type="file" hidden accept="image/*" onChange={handleFotoChange} />
+            </Button>
+
+            <TextField
+              label="Nome"
+              name="nome"
+              value={formData.nome || ""}
+              onChange={handleChange}
+              fullWidth
+            />
+
+            <TextField
+              label="E-mail"
+              name="email"
+              value={formData.email || ""}
+              onChange={handleChange}
+              fullWidth
+            />
+
+            <TextField
+              label="Telefone"
+              name="telefone"
+              value={formData.telefone || ""}
+              onChange={handleChange}
+              fullWidth
+            />
+
+            <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ width: "100%" }}>
+              <TextField
+                label="CEP"
+                name="cep"
+                value={formData.cep || ""}
+                onChange={(e) => {
+                  setFormData({ ...formData, cep: e.target.value });
+                  if (e.target.value.replace(/\D/g, "").length === 8) {
+                    buscarCidadeEstadoPorCep(e.target.value);
+                  } else {
+                    setViaCepError(null);
+                  }
+                }}
+                fullWidth
+                error={Boolean(viaCepError)}
+                helperText={viaCepError || "Digite o CEP para preencher cidade e estado automaticamente"}
+              />
+              {viaCepLoading && <CircularProgress size={24} />}
+            </Stack>
+
+            <TextField
+              label="Cidade"
+              name="cidade"
+              value={formData.cidade || ""}
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
+
+            <TextField
+              label="Estado"
+              name="estado"
+              value={formData.estado || ""}
+              fullWidth
+              InputProps={{ readOnly: true }}
+            />
+
+            <TextField
+              label="Senha"
+              name="senha"
+              type="password"
+              value={formData.senha || ""}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancelar</Button>
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            disabled={loading}
+            sx={{ backgroundColor: "#395195" }}
+          >
+            {loading ? "Salvando..." : "Salvar"}
           </Button>
         </DialogActions>
       </Dialog>
