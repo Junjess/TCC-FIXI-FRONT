@@ -41,14 +41,6 @@ export default function PageProcurarServico() {
 
   const [aplicarTick, setAplicarTick] = useState(0);
 
-  if (!user) {
-    return (
-      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   useEffect(() => {
     if (openFiltros) listarCategorias().then(setCategorias).catch(console.error);
   }, [openFiltros]);
@@ -62,13 +54,20 @@ export default function PageProcurarServico() {
     })();
   }, [ufSel]);
 
+  if (!user) {
+    return (
+      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   const toggleCategoria = (id: number) => {
     setCategoriasSelecionadas((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
-  // === Abertura do Dialog de Edição ===
   const handleOpenDialog = () => {
     setFormData({
       nome: user.nome,
