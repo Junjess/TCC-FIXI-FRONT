@@ -137,6 +137,8 @@ function MinhasAvaliacoes() {
 
       const dados = await buscarAvaliacoesPlataforma(user.id);
 
+      console.table(dados);
+
       // cria container oculto
       const container = document.createElement("div");
       container.style.width = "800px";
@@ -156,7 +158,7 @@ function MinhasAvaliacoes() {
             <Line type="monotone" dataKey="tempoPlataforma" stroke="#8884d8" name="Tempo na Plataforma" />
             <Line type="monotone" dataKey="taxaAceitacao" stroke="#82ca9d" name="Taxa de Aceitação" />
             <Line type="monotone" dataKey="taxaCancelamento" stroke="#ff7300" name="Taxa de Cancelamento" />
-            <Line type="monotone" dataKey="avaliacaoIA" stroke="#00bcd4" name="Avaliação IA" />
+            <Line type="monotone" dataKey="avaliacaoIa" stroke="#00bcd4" name="Avaliação IA" />
             <Line type="monotone" dataKey="notaFinal" stroke="#000" strokeWidth={2} name="Nota Final" />
           </LineChart>
         </ResponsiveContainer>
