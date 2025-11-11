@@ -63,7 +63,6 @@ const PageRecomendacoes: React.FC = () => {
     const [viaCepLoading, setViaCepLoading] = useState(false);
     const [viaCepError, setViaCepError] = useState<string | null>(null);
 
-    //  Ref para auto-scroll
     const endRef = useRef<HTMLDivElement | null>(null);
     const scrollToBottom = () => {
         endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -144,16 +143,15 @@ const PageRecomendacoes: React.FC = () => {
         handleCloseDialog();
     };
 
-    //  Buscar conversas ao iniciar
     useEffect(() => {
         const init = async () => {
             if (!user) return;
             try {
                 const lista = await buscarConversas(user.id);
-                setConversas(Array.isArray(lista) ? lista : []); // ✅ garante array
+                setConversas(Array.isArray(lista) ? lista : []); 
             } catch (err) {
                 console.error("Erro ao buscar conversas", err);
-                setConversas([]); // evita erro
+                setConversas([]); 
             }
         };
         init();
@@ -163,9 +161,6 @@ const PageRecomendacoes: React.FC = () => {
         return null;
     }
 
-
-
-    //  Selecionar conversa existente
     const selecionarConversa = async (id: number) => {
         setConversaSelecionada(id);
         const msgs = await buscarMensagens(id);
@@ -183,7 +178,6 @@ const PageRecomendacoes: React.FC = () => {
         try {
             let conversaId = conversaSelecionada;
 
-            // Se ainda não existe conversa -> cria primeiro
             if (!conversaId) {
                 const nova = await criarConversa(user.id);
                 conversaId = nova.id;
@@ -191,10 +185,8 @@ const PageRecomendacoes: React.FC = () => {
                 setConversas((prev) => [nova, ...prev].slice(0, 10));
             }
 
-            // Ativa indicador de "IA digitando"
             setIaDigitando(true);
 
-            // Envia mensagem do cliente
             const res = await salvarMensagem(conversaId, {
                 autor: "CLIENTE",
                 texto: input,
@@ -207,7 +199,6 @@ const PageRecomendacoes: React.FC = () => {
             ]);
         } catch (err) {
             console.error("Erro ao enviar mensagem", err);
-            // Mensagem de erro da IA
             setMensagens((prev) => [
                 ...prev,
                 {

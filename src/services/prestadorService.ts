@@ -41,7 +41,6 @@ export async function buscarPrestadorPorId(id: number): Promise<PrestadorDetalhe
   return data;
 }
 
-// Utilitário: limpar telefone
 export function limparTelefone(telefone: string): string {
   if (!telefone) return "";
   return telefone.replace(/\D/g, ""); 

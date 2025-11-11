@@ -156,7 +156,7 @@ function MinhasAvaliacoes() {
             <Line type="monotone" dataKey="tempoPlataforma" stroke="#8884d8" name="Tempo na Plataforma" />
             <Line type="monotone" dataKey="taxaAceitacao" stroke="#82ca9d" name="Taxa de Aceitação" />
             <Line type="monotone" dataKey="taxaCancelamento" stroke="#ff7300" name="Taxa de Cancelamento" />
-            <Line type="monotone" dataKey="avaliacaoIa" stroke="#00bcd4" name="Avaliação IA" />
+            <Line type="monotone" dataKey="avaliacaoIA" stroke="#00bcd4" name="Avaliação IA" />
             <Line type="monotone" dataKey="notaFinal" stroke="#000" strokeWidth={2} name="Nota Final" />
           </LineChart>
         </ResponsiveContainer>
@@ -209,139 +209,157 @@ function MinhasAvaliacoes() {
     }
   };
 
-  const handleDownloadDesempenhoGeral = async () => {
-    try {
-      if (!user?.id) {
-        alert("Usuário não encontrado");
-        return;
-      }
+const handleDownloadDesempenhoGeral = async () => {
+  try {
+    if (!user?.id) {
+      alert("Usuário não encontrado");
+      return;
+    }
+    const normMes = (s: string | undefined | null) => {
+      const base = String(s ?? "");
+      const m = base.slice(0, 7);
+      if (/^\d{4}-\d{2}$/.test(m)) return m;
+      const d = new Date(base);
+      return isNaN(d.getTime()) ? m : d.toISOString().slice(0, 7);
+    };
+    const dados = await buscarDesempenhoGeral(user.id);
+    const iaRaw = Array.isArray(dados?.avaliacoesPlataforma) ? dados.avaliacoesPlataforma : [];
+    const clientesRaw = Array.isArray(dados?.avaliacoesClientes) ? dados.avaliacoesClientes : [];
 
-      const dados = await buscarDesempenhoGeral(user.id);
-
-      const dadosIA = dados.avaliacoesPlataforma;
-
-      const clientesPorMes: Record<string, number[]> = {};
-      dados.avaliacoesClientes.forEach((av: { data: string; nota: number }) => {
-        const mes = av.data?.substring(0, 7) || "2025-09";
-        if (!clientesPorMes[mes]) clientesPorMes[mes] = [];
+    const clientesPorMes: Record<string, number[]> = {};
+    clientesRaw.forEach((av: { data?: string; nota?: number }) => {
+      const mes = normMes(av?.data);
+      if (!clientesPorMes[mes]) clientesPorMes[mes] = [];
+      if (typeof av?.nota === "number" && !Number.isNaN(av.nota)) {
         clientesPorMes[mes].push(av.nota);
-      });
+      }
+    });
 
-      const dadosClientes = Object.entries(clientesPorMes).map(([mes, notas]) => ({
-        periodoReferencia: mes + "-01",
-        mediaClientes: notas.reduce((a, b) => a + b, 0) / notas.length,
-      }));
+    const mediaClientesPorMes: Record<string, number | null> = {};
+    Object.entries(clientesPorMes).forEach(([mes, notas]) => {
+      mediaClientesPorMes[mes] = notas.length
+        ? notas.reduce((a, b) => a + b, 0) / notas.length
+        : null;
+    });
 
-      const tabelaResumo: LinhaResumo[] = dadosIA.map((ia: any) => {
-        const clientes = dadosClientes.find((c) => c.periodoReferencia === ia.periodoReferencia);
-        return {
-          periodo: ia.periodoReferencia,
-          notaIA: ia.notaFinal.toFixed(2),
-          mediaClientes: clientes ? clientes.mediaClientes.toFixed(2) : "-",
-        };
-      });
+    const iaPorMes: Record<string, { notaFinal: number | null }> = {};
+    iaRaw.forEach((ia: any) => {
+      const mes = normMes(ia?.periodoReferencia);
+      const nota = ia?.notaFinal;
+      iaPorMes[mes] = {
+        notaFinal: typeof nota === "number" && !Number.isNaN(nota) ? nota : null,
+      };
+    });
 
-      const container = document.createElement("div");
-      container.style.width = "800px";
-      container.style.height = "400px";
-      container.style.position = "absolute";
-      container.style.top = "-9999px";
-      document.body.appendChild(container);
+    const meses = Array.from(new Set([...Object.keys(mediaClientesPorMes), ...Object.keys(iaPorMes)])).sort();
 
-      const grafico = (
-        <ResponsiveContainer width={800} height={400}>
-          <LineChart>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="periodoReferencia" />
-            <YAxis domain={[0, 5]} />
-            <Tooltip />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="notaFinal"
-              stroke="#000"
-              strokeWidth={3}
-              name="Nota Final (IA)"
-              data={dadosIA}
-            />
-            <Line
-              type="monotone"
-              dataKey="mediaClientes"
-              stroke="#82ca9d"
-              strokeWidth={3}
-              name="Média dos Clientes"
-              data={dadosClientes}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      );
+    const dadosMerged = meses.map((mes) => ({
+      periodoReferencia: mes, // "YYYY-MM"
+      notaFinal: iaPorMes[mes]?.notaFinal ?? null,
+      mediaClientes: mediaClientesPorMes[mes] ?? null,
+    }));
 
-      const root = createRoot(container);
-      root.render(grafico);
+    type LinhaResumo = { periodo: string; notaIA: string; mediaClientes: string };
+    const tabelaResumo: LinhaResumo[] = dadosMerged.map((l) => ({
+      periodo: l.periodoReferencia,
+      notaIA: l.notaFinal != null ? l.notaFinal.toFixed(2) : "-",
+      mediaClientes: l.mediaClientes != null ? l.mediaClientes.toFixed(2) : "-",
+    }));
 
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+    const container = document.createElement("div");
+    container.style.width = "800px";
+    container.style.height = "400px";
+    container.style.position = "absolute";
+    container.style.top = "-9999px";
+    document.body.appendChild(container);
 
-      const canvas = await html2canvas(container);
-      const imgData = canvas.toDataURL("image/png");
+    const grafico = (
+      <ResponsiveContainer width={800} height={400}>
+        <LineChart data={dadosMerged}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="periodoReferencia" />
+          <YAxis domain={[0, 5]} />
+          <Tooltip />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="notaFinal"
+            stroke="#000"
+            strokeWidth={3}
+            name="Nota Final (IA)"
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="mediaClientes"
+            stroke="#82ca9d"
+            strokeWidth={3}
+            name="Média dos Clientes"
+            connectNulls
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    );
 
-      const pdf = new jsPDF("landscape");
-      const hoje = new Date().toLocaleDateString("pt-BR");
+    const root = createRoot(container);
+    root.render(grafico);
 
-      pdf.setFontSize(18);
-      pdf.text("Relatório - Desempenho Geral", 15, 15);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
 
-      pdf.setFontSize(12);
-      pdf.text(`Gerado em: ${hoje}`, 15, 25);
-      pdf.text(`Prestador: ${user?.nome}`, 15, 32);
+    const canvas = await html2canvas(container);
+    const imgData = canvas.toDataURL("image/png");
 
-      pdf.setFontSize(11);
-      pdf.text(
-        "Este relatório compara a Nota Final atribuída pela IA com a média das notas recebidas\n" +
+    const pdf = new jsPDF("landscape");
+    const hoje = new Date().toLocaleDateString("pt-BR");
+
+    pdf.setFontSize(18);
+    pdf.text("Relatório - Desempenho Geral", 15, 15);
+
+    pdf.setFontSize(12);
+    pdf.text(`Gerado em: ${hoje}`, 15, 25);
+    pdf.text(`Prestador: ${user?.nome ?? "-"}`, 15, 32);
+
+    pdf.setFontSize(11);
+    pdf.text(
+      "Este relatório compara a Nota Final atribuída pela IA com a média das notas recebidas\n" +
         "dos clientes ao longo do tempo. O objetivo é mostrar convergências ou diferenças\n" +
         "entre a avaliação automática da plataforma e a percepção real dos clientes.",
-        15,
-        45,
-        { maxWidth: 260 }
-      );
+      15,
+      45,
+      { maxWidth: 260 }
+    );
 
-      pdf.addImage(imgData, "PNG", 15, 70, 260, 120);
+    pdf.addImage(imgData, "PNG", 15, 70, 260, 120);
 
-      autoTable(pdf, {
-        startY: 200,
-        head: [["Período", "Nota Final (IA)", "Média Clientes"]],
-        body: tabelaResumo.map((linha: LinhaResumo) => [
-          linha.periodo,
-          linha.notaIA,
-          linha.mediaClientes,
-        ]),
-      });
+    (autoTable as any)(pdf, {
+      startY: 200,
+      head: [["Período", "Nota Final (IA)", "Média Clientes"]],
+      body: tabelaResumo.map((linha) => [linha.periodo, linha.notaIA, linha.mediaClientes]),
+    });
 
-      const yAfterTable = (pdf as any).lastAutoTable.finalY + 10;
-      pdf.text(
-        "Legenda: Nota Final (IA) → avaliação automática da plataforma.\n" +
-        "Média Clientes → percepção dos clientes reais em cada período.",
-        15,
-        yAfterTable
-      );
+    const yAfterTable = (pdf as any).lastAutoTable.finalY + 10;
+    pdf.text(
+      "Legenda: Nota Final (IA) → avaliação automática da plataforma.\nMédia Clientes → percepção dos clientes reais em cada período.",
+      15,
+      yAfterTable
+    );
 
-      const ultimaNotaIA = tabelaResumo[tabelaResumo.length - 1]?.notaIA;
-      pdf.text(
-        `Conclusão: Sua última nota da IA foi ${ultimaNotaIA}, ` +
-        `${parseFloat(ultimaNotaIA) >= 4 ? "indicando bom desempenho" : "mostrando que há pontos a melhorar"}.`,
-        15,
-        yAfterTable + 20
-      );
+    const ultimaNotaIAstr = tabelaResumo[tabelaResumo.length - 1]?.notaIA ?? "-";
+    const ultimaNotaIANum = parseFloat(ultimaNotaIAstr);
+    const msgConclusao =
+      !Number.isNaN(ultimaNotaIANum) && ultimaNotaIAstr !== "-"
+        ? `${ultimaNotaIANum >= 4 ? "indicando bom desempenho" : "mostrando que há pontos a melhorar"}`
+        : "sem dado disponível para conclusão";
+    pdf.text(`Conclusão: Sua última nota da IA foi ${ultimaNotaIAstr}, ${msgConclusao}.`, 15, yAfterTable + 20);
 
-      pdf.save("desempenho-geral.pdf");
-
-      root.unmount();
-      container.remove();
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao gerar PDF do Desempenho Geral");
-    }
-  };
-
+    pdf.save("desempenho-geral.pdf");
+    root.unmount();
+    container.remove();
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao gerar PDF do Desempenho Geral");
+  }
+};
 
   if (loading) {
     return (
@@ -350,7 +368,6 @@ function MinhasAvaliacoes() {
       </Box>
     );
   }
-
   return (
     <>
       <HeaderPrestador onEditarPerfil={() => setOpenDialog(true)} />
@@ -361,14 +378,10 @@ function MinhasAvaliacoes() {
           spacing={4}
           alignItems="stretch"
         >
-          {/* ESQUERDA: Avaliações */}
           <Box flex={1} display="flex" flexDirection="column">
-            {/* Cabeçalho da seção */}
             <Typography variant="h4" fontWeight="bold" gutterBottom>
               Minhas Avaliações
             </Typography>
-
-            {/* Box para empurrar o Paper e alinhar com Relatórios */}
             <Box mt={2}>
               <Paper
                 elevation={4}
@@ -385,7 +398,6 @@ function MinhasAvaliacoes() {
                   alignItems="center"
                   spacing={4}
                 >
-                  {/* Bloco Média Geral */}
                   <Box textAlign="center" flex={1}>
                     <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
                       Média Geral (Clientes)
@@ -405,8 +417,6 @@ function MinhasAvaliacoes() {
                       {prestador?.avaliacoes?.length || 0} avaliação(ões)
                     </Typography>
                   </Box>
-
-                  {/* Bloco Nota da Plataforma */}
                   <Box textAlign="center" flex={1}>
                     <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
                       Nota da Plataforma
@@ -470,8 +480,6 @@ function MinhasAvaliacoes() {
               </Stack>
             )}
           </Box>
-
-          {/* DIREITA: Relatórios */}
           <Box
             sx={{
               width: { xs: "100%", md: "320px" },
@@ -481,7 +489,6 @@ function MinhasAvaliacoes() {
               mt: 5
             }}
           >
-            {/* Cabeçalho fora do Card, igual à esquerda */}
             <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ mb: 4 }}>
               📊 Relatórios
             </Typography>
