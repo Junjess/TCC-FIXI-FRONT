@@ -135,9 +135,32 @@ function MinhasAvaliacoes() {
         return;
       }
 
-      const dados = await buscarAvaliacoesPlataforma(user.id);
+      const dadosBrutos = await buscarAvaliacoesPlataforma(user.id);
 
-      console.table(dados);
+      const num = (v: any) => (v === null || v === undefined || v === "" ? null : Number(v));
+
+      const toPct = (v: any) => {
+        const n = num(v);
+        if (n === null || Number.isNaN(n)) return null;
+
+        if (n >= 10 && n <= 100) return Math.min(100, Math.max(0, n));
+
+        if (n >= 0 && n <= 5) return (n / 5) * 100;
+
+        if (n >= 0 && n <= 1) return n * 100;
+
+        if (n > 100) return 100;
+        return Math.min(100, Math.max(0, n));
+      };
+
+      const dados = (Array.isArray(dadosBrutos) ? dadosBrutos : []).map((d: any) => ({
+        periodoReferencia: String(d?.periodoReferencia ?? "").slice(0, 7),
+        tempoPlataformaPct: toPct(d?.tempoPlataforma),
+        taxaAceitacaoPct: toPct(d?.taxaAceitacao),
+        taxaCancelamentoPct: toPct(d?.taxaCancelamento),
+        avaliacaoIaPct: toPct(d?.avaliacaoIa ?? d?.avaliacaoIA ?? d?.avaliacao_ia),
+        notaFinalPct: toPct(d?.notaFinal),
+      }));
 
       // cria container oculto
       const container = document.createElement("div");
@@ -152,14 +175,14 @@ function MinhasAvaliacoes() {
           <LineChart data={dados}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="periodoReferencia" />
-            <YAxis domain={[0, 5]} />
-            <Tooltip />
+            <YAxis domain={[0, 100]} />
+            <Tooltip formatter={(v: any) => [`${Math.round(v)}%`, ""]} />
             <Legend />
-            <Line type="monotone" dataKey="tempoPlataforma" stroke="#8884d8" name="Tempo na Plataforma" />
-            <Line type="monotone" dataKey="taxaAceitacao" stroke="#82ca9d" name="Taxa de Aceitação" />
-            <Line type="monotone" dataKey="taxaCancelamento" stroke="#ff7300" name="Taxa de Cancelamento" />
-            <Line type="monotone" dataKey="avaliacaoIa" stroke="#00bcd4" name="Avaliação IA" />
-            <Line type="monotone" dataKey="notaFinal" stroke="#000" strokeWidth={2} name="Nota Final" />
+            <Line type="monotone" dataKey="tempoPlataformaPct" stroke="#8884d8" name="Tempo na Plataforma (%)" connectNulls isAnimationActive={false} />
+            <Line type="monotone" dataKey="taxaAceitacaoPct" stroke="#82ca9d" name="Taxa de Aceitação (%)" connectNulls isAnimationActive={false} />
+            <Line type="monotone" dataKey="taxaCancelamentoPct" stroke="#ff7300" name="Taxa de Cancelamento (%)" connectNulls isAnimationActive={false} />
+            <Line type="monotone" dataKey="avaliacaoIaPct" stroke="#00bcd4" name="Avaliação IA (%)" connectNulls isAnimationActive={false} />
+            <Line type="monotone" dataKey="notaFinalPct" stroke="#000" name="Nota Final (%)" strokeWidth={2} connectNulls isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       );
