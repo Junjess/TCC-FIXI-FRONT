@@ -209,157 +209,156 @@ function MinhasAvaliacoes() {
     }
   };
 
-const handleDownloadDesempenhoGeral = async () => {
-  try {
-    if (!user?.id) {
-      alert("Usuário não encontrado");
-      return;
-    }
-    const normMes = (s: string | undefined | null) => {
-      const base = String(s ?? "");
-      const m = base.slice(0, 7);
-      if (/^\d{4}-\d{2}$/.test(m)) return m;
-      const d = new Date(base);
-      return isNaN(d.getTime()) ? m : d.toISOString().slice(0, 7);
-    };
-    const dados = await buscarDesempenhoGeral(user.id);
-    const iaRaw = Array.isArray(dados?.avaliacoesPlataforma) ? dados.avaliacoesPlataforma : [];
-    const clientesRaw = Array.isArray(dados?.avaliacoesClientes) ? dados.avaliacoesClientes : [];
-
-    const clientesPorMes: Record<string, number[]> = {};
-    clientesRaw.forEach((av: { data?: string; nota?: number }) => {
-      const mes = normMes(av?.data);
-      if (!clientesPorMes[mes]) clientesPorMes[mes] = [];
-      if (typeof av?.nota === "number" && !Number.isNaN(av.nota)) {
-        clientesPorMes[mes].push(av.nota);
+  const handleDownloadDesempenhoGeral = async () => {
+    try {
+      if (!user?.id) {
+        alert("Usuário não encontrado");
+        return;
       }
-    });
-
-    const mediaClientesPorMes: Record<string, number | null> = {};
-    Object.entries(clientesPorMes).forEach(([mes, notas]) => {
-      mediaClientesPorMes[mes] = notas.length
-        ? notas.reduce((a, b) => a + b, 0) / notas.length
-        : null;
-    });
-
-    const iaPorMes: Record<string, { notaFinal: number | null }> = {};
-    iaRaw.forEach((ia: any) => {
-      const mes = normMes(ia?.periodoReferencia);
-      const nota = ia?.notaFinal;
-      iaPorMes[mes] = {
-        notaFinal: typeof nota === "number" && !Number.isNaN(nota) ? nota : null,
+      const normMes = (s: string | undefined | null) => {
+        const base = String(s ?? "");
+        const m = base.slice(0, 7);
+        if (/^\d{4}-\d{2}$/.test(m)) return m;
+        const d = new Date(base);
+        return isNaN(d.getTime()) ? m : d.toISOString().slice(0, 7);
       };
-    });
+      const dados = await buscarDesempenhoGeral(user.id);
+      const iaRaw = Array.isArray(dados?.avaliacoesPlataforma) ? dados.avaliacoesPlataforma : [];
+      const clientesRaw = Array.isArray(dados?.avaliacoesClientes) ? dados.avaliacoesClientes : [];
 
-    const meses = Array.from(new Set([...Object.keys(mediaClientesPorMes), ...Object.keys(iaPorMes)])).sort();
+      const clientesPorMes: Record<string, number[]> = {};
+      clientesRaw.forEach((av: { data?: string; nota?: number }) => {
+        const mes = normMes(av?.data);
+        if (!clientesPorMes[mes]) clientesPorMes[mes] = [];
+        if (typeof av?.nota === "number" && !Number.isNaN(av.nota)) {
+          clientesPorMes[mes].push(av.nota);
+        }
+      });
 
-    const dadosMerged = meses.map((mes) => ({
-      periodoReferencia: mes, // "YYYY-MM"
-      notaFinal: iaPorMes[mes]?.notaFinal ?? null,
-      mediaClientes: mediaClientesPorMes[mes] ?? null,
-    }));
+      const mediaClientesPorMes: Record<string, number | null> = {};
+      Object.entries(clientesPorMes).forEach(([mes, notas]) => {
+        mediaClientesPorMes[mes] = notas.length
+          ? notas.reduce((a, b) => a + b, 0) / notas.length
+          : null;
+      });
 
-    type LinhaResumo = { periodo: string; notaIA: string; mediaClientes: string };
-    const tabelaResumo: LinhaResumo[] = dadosMerged.map((l) => ({
-      periodo: l.periodoReferencia,
-      notaIA: l.notaFinal != null ? l.notaFinal.toFixed(2) : "-",
-      mediaClientes: l.mediaClientes != null ? l.mediaClientes.toFixed(2) : "-",
-    }));
+      const iaPorMes: Record<string, { notaFinal: number | null }> = {};
+      iaRaw.forEach((ia: any) => {
+        const mes = normMes(ia?.periodoReferencia);
+        const nota = ia?.notaFinal;
+        iaPorMes[mes] = {
+          notaFinal: typeof nota === "number" && !Number.isNaN(nota) ? nota : null,
+        };
+      });
 
-    const container = document.createElement("div");
-    container.style.width = "800px";
-    container.style.height = "400px";
-    container.style.position = "absolute";
-    container.style.top = "-9999px";
-    document.body.appendChild(container);
+      const meses = Array.from(new Set([...Object.keys(mediaClientesPorMes), ...Object.keys(iaPorMes)])).sort();
 
-    const grafico = (
-      <ResponsiveContainer width={800} height={400}>
-        <LineChart data={dadosMerged}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="periodoReferencia" />
-          <YAxis domain={[0, 5]} />
-          <Tooltip />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="notaFinal"
-            stroke="#000"
-            strokeWidth={3}
-            name="Nota Final (IA)"
-            connectNulls
-          />
-          <Line
-            type="monotone"
-            dataKey="mediaClientes"
-            stroke="#82ca9d"
-            strokeWidth={3}
-            name="Média dos Clientes"
-            connectNulls
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    );
+      const dadosMerged = meses.map((mes) => ({
+        periodoReferencia: mes, // "YYYY-MM"
+        notaFinal: iaPorMes[mes]?.notaFinal ?? null,
+        mediaClientes: mediaClientesPorMes[mes] ?? null,
+      }));
 
-    const root = createRoot(container);
-    root.render(grafico);
+      const tabelaResumo: LinhaResumo[] = dadosMerged.map((l) => ({
+        periodo: l.periodoReferencia,
+        notaIA: l.notaFinal != null ? l.notaFinal.toFixed(2) : "-",
+        mediaClientes: l.mediaClientes != null ? l.mediaClientes.toFixed(2) : "-",
+      }));
 
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+      const container = document.createElement("div");
+      container.style.width = "800px";
+      container.style.height = "400px";
+      container.style.position = "absolute";
+      container.style.top = "-9999px";
+      document.body.appendChild(container);
 
-    const canvas = await html2canvas(container);
-    const imgData = canvas.toDataURL("image/png");
+      const grafico = (
+        <ResponsiveContainer width={800} height={400}>
+          <LineChart data={dadosMerged}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="periodoReferencia" />
+            <YAxis domain={[0, 5]} />
+            <Tooltip />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="notaFinal"
+              stroke="#000"
+              strokeWidth={3}
+              name="Nota Final (IA)"
+              connectNulls
+            />
+            <Line
+              type="monotone"
+              dataKey="mediaClientes"
+              stroke="#82ca9d"
+              strokeWidth={3}
+              name="Média dos Clientes"
+              connectNulls
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      );
 
-    const pdf = new jsPDF("landscape");
-    const hoje = new Date().toLocaleDateString("pt-BR");
+      const root = createRoot(container);
+      root.render(grafico);
 
-    pdf.setFontSize(18);
-    pdf.text("Relatório - Desempenho Geral", 15, 15);
+      await new Promise((resolve) => setTimeout(resolve, 1200));
 
-    pdf.setFontSize(12);
-    pdf.text(`Gerado em: ${hoje}`, 15, 25);
-    pdf.text(`Prestador: ${user?.nome ?? "-"}`, 15, 32);
+      const canvas = await html2canvas(container);
+      const imgData = canvas.toDataURL("image/png");
 
-    pdf.setFontSize(11);
-    pdf.text(
-      "Este relatório compara a Nota Final atribuída pela IA com a média das notas recebidas\n" +
+      const pdf = new jsPDF("landscape");
+      const hoje = new Date().toLocaleDateString("pt-BR");
+
+      pdf.setFontSize(18);
+      pdf.text("Relatório - Desempenho Geral", 15, 15);
+
+      pdf.setFontSize(12);
+      pdf.text(`Gerado em: ${hoje}`, 15, 25);
+      pdf.text(`Prestador: ${user?.nome ?? "-"}`, 15, 32);
+
+      pdf.setFontSize(11);
+      pdf.text(
+        "Este relatório compara a Nota Final atribuída pela IA com a média das notas recebidas\n" +
         "dos clientes ao longo do tempo. O objetivo é mostrar convergências ou diferenças\n" +
         "entre a avaliação automática da plataforma e a percepção real dos clientes.",
-      15,
-      45,
-      { maxWidth: 260 }
-    );
+        15,
+        45,
+        { maxWidth: 260 }
+      );
 
-    pdf.addImage(imgData, "PNG", 15, 70, 260, 120);
+      pdf.addImage(imgData, "PNG", 15, 70, 260, 120);
 
-    (autoTable as any)(pdf, {
-      startY: 200,
-      head: [["Período", "Nota Final (IA)", "Média Clientes"]],
-      body: tabelaResumo.map((linha) => [linha.periodo, linha.notaIA, linha.mediaClientes]),
-    });
+      (autoTable as any)(pdf, {
+        startY: 200,
+        head: [["Período", "Nota Final (IA)", "Média Clientes"]],
+        body: tabelaResumo.map((linha) => [linha.periodo, linha.notaIA, linha.mediaClientes]),
+      });
 
-    const yAfterTable = (pdf as any).lastAutoTable.finalY + 10;
-    pdf.text(
-      "Legenda: Nota Final (IA) → avaliação automática da plataforma.\nMédia Clientes → percepção dos clientes reais em cada período.",
-      15,
-      yAfterTable
-    );
+      const yAfterTable = (pdf as any).lastAutoTable.finalY + 10;
+      pdf.text(
+        "Legenda: Nota Final (IA) → avaliação automática da plataforma.\nMédia Clientes → percepção dos clientes reais em cada período.",
+        15,
+        yAfterTable
+      );
 
-    const ultimaNotaIAstr = tabelaResumo[tabelaResumo.length - 1]?.notaIA ?? "-";
-    const ultimaNotaIANum = parseFloat(ultimaNotaIAstr);
-    const msgConclusao =
-      !Number.isNaN(ultimaNotaIANum) && ultimaNotaIAstr !== "-"
-        ? `${ultimaNotaIANum >= 4 ? "indicando bom desempenho" : "mostrando que há pontos a melhorar"}`
-        : "sem dado disponível para conclusão";
-    pdf.text(`Conclusão: Sua última nota da IA foi ${ultimaNotaIAstr}, ${msgConclusao}.`, 15, yAfterTable + 20);
+      const ultimaNotaIAstr = tabelaResumo[tabelaResumo.length - 1]?.notaIA ?? "-";
+      const ultimaNotaIANum = parseFloat(ultimaNotaIAstr);
+      const msgConclusao =
+        !Number.isNaN(ultimaNotaIANum) && ultimaNotaIAstr !== "-"
+          ? `${ultimaNotaIANum >= 4 ? "indicando bom desempenho" : "mostrando que há pontos a melhorar"}`
+          : "sem dado disponível para conclusão";
+      pdf.text(`Conclusão: Sua última nota da IA foi ${ultimaNotaIAstr}, ${msgConclusao}.`, 15, yAfterTable + 20);
 
-    pdf.save("desempenho-geral.pdf");
-    root.unmount();
-    container.remove();
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao gerar PDF do Desempenho Geral");
-  }
-};
+      pdf.save("desempenho-geral.pdf");
+      root.unmount();
+      container.remove();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao gerar PDF do Desempenho Geral");
+    }
+  };
 
   if (loading) {
     return (
