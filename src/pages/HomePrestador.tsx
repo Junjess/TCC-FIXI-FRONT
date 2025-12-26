@@ -92,12 +92,10 @@ const HomePrestador: React.FC = () => {
 
   const prestador = user as PrestadorProfileDTO;
 
-  // Extrair categorias únicas dos agendamentos
   const categoriasUnicas = Array.from(
     new Set(agendamentos.map((ag) => ag.categoriaAgendamento).filter(Boolean))
   );
 
-  // Filtro de categorias (usando categoriaAgendamento)
   const agendamentosFiltrados =
     categoriaSelecionada === "todos"
       ? agendamentos
@@ -338,7 +336,7 @@ const HomePrestador: React.FC = () => {
               updated = await atualizarFotoPrestador(prestador.id, fotoFile);
             }
 
-            setUser(updated); // Atualiza no contexto
+            setUser(updated); 
             handleCloseDialog();
           } catch (err) {
             console.error("Erro ao atualizar prestador", err);

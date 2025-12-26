@@ -33,6 +33,7 @@ export type PrestadorDetalhesDTO = {
   categorias: { nomeCategoria: string; descricao: string | null }[];
   mediaAvaliacao: number;
   notaPlataforma: number; 
+  mediaClientesPeriodo?: number;
   avaliacoes: AvaliacaoDTO[];
 };
 
@@ -63,7 +64,6 @@ export async function cadastroPrestadorService(prestador: {
   return data;
 }
 
-// Atualizar dados do prestador
 export async function atualizarPrestador(
   id: number,
   prestador: Partial<Omit<PrestadorProfileDTO, "id">>
@@ -72,7 +72,6 @@ export async function atualizarPrestador(
   return data;
 }
 
-// Atualizar foto do prestador
 export async function atualizarFotoPrestador(
   id: number,
   file: File

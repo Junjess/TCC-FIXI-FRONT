@@ -32,7 +32,6 @@ export type AgendamentoRespostaDTO = {
   notaAvaliacaoCliente?: number;
   comentarioAvaliacaoCliente?: string;
 
-  //   Novos campos
   descricaoServico: string;
   valorSugerido?: number | null;
 };

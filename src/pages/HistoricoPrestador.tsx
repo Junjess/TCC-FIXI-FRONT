@@ -29,20 +29,24 @@ import {
 import { salvarAvaliacaoPrestador } from "../services/avaliacaoService";
 import HeaderPrestador from "../components/prestador/HeaderPrestador";
 import TrocarTema from "../components/TrocarTema";
+import { atualizarFotoPrestador, atualizarPrestador, PrestadorProfileDTO } from "../services/prestadorService";
+import DialogEditarPrestador from "../components/prestador/DialogEditarPrestador";
 
 export default function HistoricoPrestador() {
   const theme = useTheme();
-  const { user } = useUser();
+  const { user, setUser } = useUser();
+  const [openDialog, setOpenDialog] = useState(false);
 
   const [itens, setItens] = useState<AgendamentoRespostaDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-
+  const [, setFormData] = useState<Partial<PrestadorProfileDTO>>({});
   const [avaliarOpen, setAvaliarOpen] = useState(false);
   const [avaliarNota, setAvaliarNota] = useState<number | null>(0);
   const [avaliarDescricao, setAvaliarDescricao] = useState("");
   const [avaliarAgendamentoId, setAvaliarAgendamentoId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [, setFotoFile] = useState<File | null>(null);
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -78,6 +82,8 @@ export default function HistoricoPrestador() {
     };
   }, [user?.id]);
 
+  const prestador = user as PrestadorProfileDTO;
+
   const paridade = (ag: AgendamentoRespostaDTO) =>
     ag.notaAvaliacaoPrestador != null &&
     ag.comentarioAvaliacaoPrestador != null &&
@@ -91,6 +97,22 @@ export default function HistoricoPrestador() {
     setAvaliarDescricao("");
     setAvaliarOpen(true);
   }
+
+  const handleOpenDialog = () => {
+    setFormData({
+      nome: prestador.nome,
+      email: prestador.email,
+      telefone: prestador.telefone,
+      cidade: prestador.cidade,
+      estado: prestador.estado,
+    });
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setFotoFile(null);
+  };
 
   async function salvar() {
     if (!avaliarAgendamentoId || !avaliarNota) return;
@@ -139,11 +161,9 @@ export default function HistoricoPrestador() {
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: theme.palette.background.paper }}>
-      {/* Header no mesmo padrão das outras telas */}
-      <HeaderPrestador onEditarPerfil={() => {}} />
+      <HeaderPrestador onEditarPerfil={handleOpenDialog} />
 
       <Container sx={{ mt: 5, mb: 4 }}>
-        {/* Card “container” igual ao do cliente */}
         <Card
           sx={{
             backgroundColor: theme.palette.background.default,
@@ -284,6 +304,35 @@ export default function HistoricoPrestador() {
         </Card>
       </Container>
 
+      <DialogEditarPrestador
+        open={openDialog}
+        onClose={handleCloseDialog}
+        user={prestador as PrestadorProfileDTO}
+        loading={loading}
+        onSave={async (formData, fotoFile) => {
+          try {
+            setLoading(true);
+            let updated = prestador;
+
+            if (Object.keys(formData).length > 0) {
+              updated = await atualizarPrestador(prestador.id, formData);
+            }
+
+            if (fotoFile) {
+              updated = await atualizarFotoPrestador(prestador.id, fotoFile);
+            }
+
+            setUser(updated); 
+            handleCloseDialog();
+          } catch (err) {
+            console.error("Erro ao atualizar prestador", err);
+            alert("Erro ao atualizar prestador");
+          } finally {
+            setLoading(false);
+          }
+        }}
+      />
+
       {/* Dialog no mesmo estilo das outras telas */}
       <Dialog
         open={avaliarOpen}
@@ -330,7 +379,7 @@ export default function HistoricoPrestador() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-      <TrocarTema/>
+      <TrocarTema />
     </Box>
   );
 }

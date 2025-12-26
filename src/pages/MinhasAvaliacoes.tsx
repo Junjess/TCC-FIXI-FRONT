@@ -106,7 +106,7 @@ function MinhasAvaliacoes() {
       }
 
       const response = await api.get(`/avaliacoes/${user.id}/download`, {
-        responseType: "blob", // necessário para arquivos binários (PDF)
+        responseType: "blob", 
       });
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -134,256 +134,213 @@ function MinhasAvaliacoes() {
         alert("Usuário não encontrado");
         return;
       }
-
-      const dadosBrutos = await buscarAvaliacoesPlataforma(user.id);
-
-      const num = (v: any) => (v === null || v === undefined || v === "" ? null : Number(v));
-
-      const toPct = (v: any) => {
-        const n = num(v);
-        if (n === null || Number.isNaN(n)) return null;
-
-        if (n >= 10 && n <= 100) return Math.min(100, Math.max(0, n));
-
-        if (n >= 0 && n <= 5) return (n / 5) * 100;
-
-        if (n >= 0 && n <= 1) return n * 100;
-
-        if (n > 100) return 100;
-        return Math.min(100, Math.max(0, n));
-      };
-
-      const dados = (Array.isArray(dadosBrutos) ? dadosBrutos : []).map((d: any) => ({
-        periodoReferencia: String(d?.periodoReferencia ?? "").slice(0, 7),
-        tempoPlataformaPct: toPct(d?.tempoPlataforma),
-        taxaAceitacaoPct: toPct(d?.taxaAceitacao),
-        taxaCancelamentoPct: toPct(d?.taxaCancelamento),
-        avaliacaoIaPct: toPct(d?.avaliacaoIa ?? d?.avaliacaoIA ?? d?.avaliacao_ia),
-        notaFinalPct: toPct(d?.notaFinal),
-      }));
-
-      // cria container oculto
+      const dados = await buscarAvaliacoesPlataforma(user.id);
+      console.log(dados);
       const container = document.createElement("div");
       container.style.width = "800px";
       container.style.height = "400px";
       container.style.position = "absolute";
       container.style.top = "-9999px";
       document.body.appendChild(container);
-
       const grafico = (
         <ResponsiveContainer width={800} height={400}>
           <LineChart data={dados}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="periodoReferencia" />
-            <YAxis domain={[0, 100]} />
-            <Tooltip formatter={(v: any) => [`${Math.round(v)}%`, ""]} />
+            <YAxis domain={[0, 5]} /> <Tooltip />
             <Legend />
-            <Line type="monotone" dataKey="tempoPlataformaPct" stroke="#8884d8" name="Tempo na Plataforma (%)" connectNulls isAnimationActive={false} />
-            <Line type="monotone" dataKey="taxaAceitacaoPct" stroke="#82ca9d" name="Taxa de Aceitação (%)" connectNulls isAnimationActive={false} />
-            <Line type="monotone" dataKey="taxaCancelamentoPct" stroke="#ff7300" name="Taxa de Cancelamento (%)" connectNulls isAnimationActive={false} />
-            <Line type="monotone" dataKey="avaliacaoIaPct" stroke="#00bcd4" name="Avaliação IA (%)" connectNulls isAnimationActive={false} />
-            <Line type="monotone" dataKey="notaFinalPct" stroke="#000" name="Nota Final (%)" strokeWidth={2} connectNulls isAnimationActive={false} />
+            <Line type="monotone" dataKey="tempoPlataforma" stroke="#8884d8"
+              name="Tempo na Plataforma" /> <Line type="monotone" dataKey="taxaAceitacao"
+                stroke="#82ca9d" name="Taxa de Aceitação" />
+            <Line type="monotone" dataKey="taxaCancelamento" stroke="#ff7300"
+              name="Taxa de Cancelamento" /> <Line type="monotone" dataKey="avaliacaoIa"
+                stroke="#00bcd4" name="Avaliação IA" /> <Line type="monotone" dataKey="notaFinal"
+                  stroke="#000" strokeWidth={2} name="Nota Final" />
           </LineChart>
         </ResponsiveContainer>
       );
-
       const root = createRoot(container);
       root.render(grafico);
-
       await new Promise((resolve) => setTimeout(resolve, 1200));
-
       const canvas = await html2canvas(container);
       const imgData = canvas.toDataURL("image/png");
-
       const pdf = new jsPDF("landscape");
       const hoje = new Date().toLocaleDateString("pt-BR");
-
       pdf.setFontSize(18);
       pdf.text("Relatório - Nota da Plataforma", 15, 15);
-
-      pdf.setFontSize(12);
-      pdf.text(`Gerado em: ${hoje}`, 15, 25);
-      pdf.text(`Prestador: ${user?.nome}`, 15, 32);
-
-      pdf.setFontSize(11);
-      pdf.text(
-        "Este relatório mostra a evolução da sua nota calculada pela plataforma.\n" +
-        "O gráfico apresenta indicadores como tempo ativo, taxa de aceitação, taxa de cancelamento,\n" +
-        "avaliação da IA e a nota final consolidada.",
-        15,
-        45,
-        { maxWidth: 260 }
-      );
-
-      pdf.addImage(imgData, "PNG", 15, 70, 260, 120);
-
-      pdf.text(
-        "Conclusão: A Nota Final representa um índice consolidado do seu desempenho geral\nna plataforma, considerando eficiência, confiabilidade e satisfação.",
-        15,
-        200,
-        { maxWidth: 260 }
-      );
-
-      pdf.save("nota-plataforma.pdf");
-
-      root.unmount();
-      container.remove();
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao gerar PDF da Nota da Plataforma");
-    }
-  };
-
-  const handleDownloadDesempenhoGeral = async () => {
-    try {
-      if (!user?.id) {
-        alert("Usuário não encontrado");
-        return;
-      }
-      const normMes = (s: string | undefined | null) => {
-        const base = String(s ?? "");
-        const m = base.slice(0, 7);
-        if (/^\d{4}-\d{2}$/.test(m)) return m;
-        const d = new Date(base);
-        return isNaN(d.getTime()) ? m : d.toISOString().slice(0, 7);
-      };
-      const dados = await buscarDesempenhoGeral(user.id);
-      const iaRaw = Array.isArray(dados?.avaliacoesPlataforma) ? dados.avaliacoesPlataforma : [];
-      const clientesRaw = Array.isArray(dados?.avaliacoesClientes) ? dados.avaliacoesClientes : [];
-
-      const clientesPorMes: Record<string, number[]> = {};
-      clientesRaw.forEach((av: { data?: string; nota?: number }) => {
-        const mes = normMes(av?.data);
-        if (!clientesPorMes[mes]) clientesPorMes[mes] = [];
-        if (typeof av?.nota === "number" && !Number.isNaN(av.nota)) {
-          clientesPorMes[mes].push(av.nota);
-        }
-      });
-
-      const mediaClientesPorMes: Record<string, number | null> = {};
-      Object.entries(clientesPorMes).forEach(([mes, notas]) => {
-        mediaClientesPorMes[mes] = notas.length
-          ? notas.reduce((a, b) => a + b, 0) / notas.length
-          : null;
-      });
-
-      const iaPorMes: Record<string, { notaFinal: number | null }> = {};
-      iaRaw.forEach((ia: any) => {
-        const mes = normMes(ia?.periodoReferencia);
-        const nota = ia?.notaFinal;
-        iaPorMes[mes] = {
-          notaFinal: typeof nota === "number" && !Number.isNaN(nota) ? nota : null,
-        };
-      });
-
-      const meses = Array.from(new Set([...Object.keys(mediaClientesPorMes), ...Object.keys(iaPorMes)])).sort();
-
-      const dadosMerged = meses.map((mes) => ({
-        periodoReferencia: mes, // "YYYY-MM"
-        notaFinal: iaPorMes[mes]?.notaFinal ?? null,
-        mediaClientes: mediaClientesPorMes[mes] ?? null,
-      }));
-
-      const tabelaResumo: LinhaResumo[] = dadosMerged.map((l) => ({
-        periodo: l.periodoReferencia,
-        notaIA: l.notaFinal != null ? l.notaFinal.toFixed(2) : "-",
-        mediaClientes: l.mediaClientes != null ? l.mediaClientes.toFixed(2) : "-",
-      }));
-
-      const container = document.createElement("div");
-      container.style.width = "800px";
-      container.style.height = "400px";
-      container.style.position = "absolute";
-      container.style.top = "-9999px";
-      document.body.appendChild(container);
-
-      const grafico = (
-        <ResponsiveContainer width={800} height={400}>
-          <LineChart data={dadosMerged}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="periodoReferencia" />
-            <YAxis domain={[0, 5]} />
-            <Tooltip />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="notaFinal"
-              stroke="#000"
-              strokeWidth={3}
-              name="Nota Final (IA)"
-              connectNulls
-            />
-            <Line
-              type="monotone"
-              dataKey="mediaClientes"
-              stroke="#82ca9d"
-              strokeWidth={3}
-              name="Média dos Clientes"
-              connectNulls
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      );
-
-      const root = createRoot(container);
-      root.render(grafico);
-
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-
-      const canvas = await html2canvas(container);
-      const imgData = canvas.toDataURL("image/png");
-
-      const pdf = new jsPDF("landscape");
-      const hoje = new Date().toLocaleDateString("pt-BR");
-
-      pdf.setFontSize(18);
-      pdf.text("Relatório - Desempenho Geral", 15, 15);
-
       pdf.setFontSize(12);
       pdf.text(`Gerado em: ${hoje}`, 15, 25);
       pdf.text(`Prestador: ${user?.nome ?? "-"}`, 15, 32);
-
       pdf.setFontSize(11);
-      pdf.text(
-        "Este relatório compara a Nota Final atribuída pela IA com a média das notas recebidas\n" +
-        "dos clientes ao longo do tempo. O objetivo é mostrar convergências ou diferenças\n" +
-        "entre a avaliação automática da plataforma e a percepção real dos clientes.",
-        15,
-        45,
-        { maxWidth: 260 }
-      );
-
+      pdf.text("Este relatório mostra a evolução da sua nota calculada pela plataforma.\n" +
+        "O gráfico apresenta indicadores como tempo ativo, taxa de aceitação, taxa de cancelamento,\n"
+        + "avaliação da IA e a nota final consolidada.", 15, 45, { maxWidth: 260 });
       pdf.addImage(imgData, "PNG", 15, 70, 260, 120);
-
-      (autoTable as any)(pdf, {
-        startY: 200,
-        head: [["Período", "Nota Final (IA)", "Média Clientes"]],
-        body: tabelaResumo.map((linha) => [linha.periodo, linha.notaIA, linha.mediaClientes]),
-      });
-
-      const yAfterTable = (pdf as any).lastAutoTable.finalY + 10;
-      pdf.text(
-        "Legenda: Nota Final (IA) → avaliação automática da plataforma.\nMédia Clientes → percepção dos clientes reais em cada período.",
-        15,
-        yAfterTable
-      );
-
-      const ultimaNotaIAstr = tabelaResumo[tabelaResumo.length - 1]?.notaIA ?? "-";
-      const ultimaNotaIANum = parseFloat(ultimaNotaIAstr);
-      const msgConclusao =
-        !Number.isNaN(ultimaNotaIANum) && ultimaNotaIAstr !== "-"
-          ? `${ultimaNotaIANum >= 4 ? "indicando bom desempenho" : "mostrando que há pontos a melhorar"}`
-          : "sem dado disponível para conclusão";
-      pdf.text(`Conclusão: Sua última nota da IA foi ${ultimaNotaIAstr}, ${msgConclusao}.`, 15, yAfterTable + 20);
-
-      pdf.save("desempenho-geral.pdf");
+      pdf.text("Conclusão: A Nota Final representa um índice consolidado do seu desempenho geral\nna plataforma, considerando eficiência, confiabilidade e satisfação.", 15, 200, { maxWidth: 260 });
+      pdf.save("nota-plataforma.pdf");
       root.unmount();
       container.remove();
     } catch (err) {
-      console.error(err);
-      alert("Erro ao gerar PDF do Desempenho Geral");
+      console.error(err); alert("Erro ao gerar PDF da Nota da Plataforma");
     }
   };
+
+const handleDownloadDesempenhoGeral = async () => {
+  try {
+    if (!user?.id) {
+      alert("Usuário não encontrado");
+      return;
+    }
+
+    const normMes = (s: string | undefined | null) => {
+      const base = String(s ?? "");
+      const m = base.slice(0, 7);
+      if (/^\d{4}-\d{2}$/.test(m)) return m;
+      const d = new Date(base);
+      return isNaN(d.getTime()) ? m : d.toISOString().slice(0, 7);
+    };
+
+    const dados = await buscarDesempenhoGeral(user.id);
+    console.log(dados);
+
+    const iaRaw = Array.isArray(dados?.avaliacoesPlataforma)
+      ? dados.avaliacoesPlataforma
+      : [];
+
+    const iaPorMes: Record<string, { notaFinal: number | null; mediaClientes: number | null }> = {};
+
+    iaRaw.forEach((ia: any) => {
+      const mes = normMes(ia?.periodoReferencia);
+
+      const notaFinal =
+        typeof ia?.notaFinal === "number" && !Number.isNaN(ia.notaFinal)
+          ? ia.notaFinal
+          : null;
+
+      const mediaClientes =
+        typeof ia?.mediaClientes === "number" && !Number.isNaN(ia.mediaClientes)
+          ? ia.mediaClientes
+          : null;
+
+      iaPorMes[mes] = { notaFinal, mediaClientes };
+    });
+
+    const meses = Object.keys(iaPorMes).sort();
+
+    const dadosMerged = meses.map((mes) => ({
+      periodoReferencia: mes, // "YYYY-MM"
+      notaFinal: iaPorMes[mes]?.notaFinal ?? null,
+      mediaClientes: iaPorMes[mes]?.mediaClientes ?? null,
+    }));
+
+    const tabelaResumo: LinhaResumo[] = dadosMerged.map((l) => ({
+      periodo: l.periodoReferencia,
+      notaIA: l.notaFinal != null ? l.notaFinal.toFixed(2) : "-",
+      mediaClientes: l.mediaClientes != null ? l.mediaClientes.toFixed(2) : "-",
+    }));
+
+    const container = document.createElement("div");
+    container.style.width = "800px";
+    container.style.height = "400px";
+    container.style.position = "absolute";
+    container.style.top = "-9999px";
+    document.body.appendChild(container);
+
+    const grafico = (
+      <ResponsiveContainer width={800} height={400}>
+        <LineChart data={dadosMerged}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="periodoReferencia" />
+          <YAxis domain={[0, 5]} />
+          <Tooltip />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="notaFinal"
+            stroke="#000"
+            strokeWidth={3}
+            name="Nota Final (IA)"
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="mediaClientes"
+            stroke="#82ca9d"
+            strokeWidth={3}
+            name="Média dos Clientes"
+            connectNulls
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+
+    const root = createRoot(container);
+    root.render(grafico);
+
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+
+    const canvas = await html2canvas(container);
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("landscape");
+    const hoje = new Date().toLocaleDateString("pt-BR");
+
+    pdf.setFontSize(18);
+    pdf.text("Relatório - Desempenho Geral", 15, 15);
+
+    pdf.setFontSize(12);
+    pdf.text(`Gerado em: ${hoje}`, 15, 25);
+    pdf.text(`Prestador: ${user?.nome ?? "-"}`, 15, 32);
+
+    pdf.setFontSize(11);
+    pdf.text(
+      "Este relatório compara a Nota Final atribuída pela IA com a média das notas recebidas\n" +
+        "dos clientes ao longo do tempo. As médias dos clientes já são calculadas pela própria\n" +
+        "plataforma e consolidadas em cada período.",
+      15,
+      45,
+      { maxWidth: 260 }
+    );
+
+    pdf.addImage(imgData, "PNG", 15, 70, 260, 120);
+
+    (autoTable as any)(pdf, {
+      startY: 200,
+      head: [["Período", "Nota Final (IA)", "Média Clientes"]],
+      body: tabelaResumo.map((linha) => [linha.periodo, linha.notaIA, linha.mediaClientes]),
+    });
+
+    const yAfterTable = (pdf as any).lastAutoTable.finalY + 10;
+    pdf.text(
+      "Legenda: Nota Final (IA) → avaliação automática da plataforma.\n" +
+        "Média Clientes → média das avaliações de clientes em cada período, calculada pela plataforma.",
+      15,
+      yAfterTable
+    );
+
+    const ultimaNotaIAstr = tabelaResumo[tabelaResumo.length - 1]?.notaIA ?? "-";
+    const ultimaNotaIANum = parseFloat(ultimaNotaIAstr);
+    const msgConclusao =
+      !Number.isNaN(ultimaNotaIANum) && ultimaNotaIAstr !== "-"
+        ? `${ultimaNotaIANum >= 4 ? "indicando bom desempenho" : "mostrando que há pontos a melhorar"}`
+        : "sem dado disponível para conclusão";
+
+    pdf.text(
+      `Conclusão: Sua última nota da IA foi ${ultimaNotaIAstr}, ${msgConclusao}.`,
+      15,
+      yAfterTable + 20
+    );
+
+    pdf.save("desempenho-geral.pdf");
+    root.unmount();
+    container.remove();
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao gerar PDF do Desempenho Geral");
+  }
+};
+
+
 
   if (loading) {
     return (

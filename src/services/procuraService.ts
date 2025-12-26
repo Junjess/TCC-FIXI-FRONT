@@ -1,15 +1,14 @@
-// services/procuraService.ts
 import { api } from "./api";
 
 export type CategoriaDescricaoDTO = {
-  nomeCategoria: string;      // nome legível da categoria (ex.: "Eletricista")
-  descricao: string | null;   // descrição opcional
+  nomeCategoria: string;     
+  descricao: string | null;   
 };
 
 export type PrestadorDTO = {
   id: number;
   nome: string;
-  categorias: CategoriaDescricaoDTO[]; // <- ajustado
+  categorias: CategoriaDescricaoDTO[];
   cidade: string;
   estado: string;
   telefone: string;
@@ -27,11 +26,10 @@ type ListarPrestadoresParams = {
   idCliente: number;
 };
 
-// Normaliza diferentes formatos vindos do backend para CategoriaDescricaoDTO[]
+
 function normalizeCategorias(raw: any): CategoriaDescricaoDTO[] {
   if (!raw) return [];
 
-  // Caso 1: já venha como [{ nomeCategoria, descricao }]
   if (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === "object" && ("nomeCategoria" in raw[0] || "descricao" in raw[0])) {
     return raw.map((c: any) => ({
       nomeCategoria: c.nomeCategoria ?? c.descricao ?? String(c) ?? "",
@@ -39,7 +37,6 @@ function normalizeCategorias(raw: any): CategoriaDescricaoDTO[] {
     }));
   }
 
-  // Caso 2: venha como [{ id, descricao }]
   if (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === "object" && ("id" in raw[0] || "descricao" in raw[0])) {
     return raw.map((c: any) => ({
       nomeCategoria: c.descricao ?? "",
@@ -47,7 +44,6 @@ function normalizeCategorias(raw: any): CategoriaDescricaoDTO[] {
     }));
   }
 
-  // Caso 3: venha como [{ descricaoCategoria }]
   if (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === "object" && ("descricaoCategoria" in raw[0])) {
     return raw.map((c: any) => ({
       nomeCategoria: c.descricaoCategoria ?? "",
@@ -55,7 +51,6 @@ function normalizeCategorias(raw: any): CategoriaDescricaoDTO[] {
     }));
   }
 
-  // Caso 4: venha como string[]
   if (Array.isArray(raw) && (raw.length === 0 || typeof raw[0] === "string")) {
     return raw.map((nome: string) => ({
       nomeCategoria: nome,
@@ -63,7 +58,6 @@ function normalizeCategorias(raw: any): CategoriaDescricaoDTO[] {
     }));
   }
 
-  // Fallback: tenta converter para string
   try {
     return Array.from<any>(raw).map((c: any) => ({
       nomeCategoria: typeof c === "string" ? c : (c?.descricao ?? String(c)),
@@ -96,7 +90,7 @@ export async function listarPrestadores({
   cidade: p.cidade,
   estado: p.estado,
   telefone: p.telefone,
-  foto: p.foto ?? undefined,                // <- aqui
+  foto: p.foto ?? undefined,                
   mediaAvaliacao: p.mediaAvaliacao ?? undefined,
   notaPlataforma: p.notaPlataforma ?? undefined,
   descricao: p.descricao ?? undefined,
